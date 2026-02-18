@@ -22,31 +22,38 @@ class DatabaseService {
 
     async syncPlansWithHotmart(): Promise<{ success: boolean; message: string }> {
         try {
-            console.log("Iniciando chamada da função sync-prices...");
+            console.log("Iniciando requisição para Edge Function...");
             
             const { data, error } = await this.supabase.functions.invoke('sync-prices', {
                 method: 'POST'
             });
-            
+
             if (error) {
-                console.error("Erro reportado pelo Supabase SDK:", error);
-                
-                // Se cair aqui, a função foi alcançada mas retornou erro ou o navegador barrou
-                if (error.message && error.message.includes('Failed to send a request')) {
-                    return { 
-                        success: false, 
-                        message: "Erro de Conexão: A função não foi encontrada ou o navegador bloqueou a chamada (CORS). Verifique se você fez o 'deploy' da função no terminal." 
-                    };
-                }
-                return { success: false, message: `Erro: ${error.message}` };
+                console.error("Erro retornado pelo Supabase invoke:", error);
+                return { 
+                    success: false, 
+                    message: `Erro na Função: ${error.message || 'Falha na comunicação'}` 
+                };
             }
             
-            return data || { success: false, message: "A função respondeu mas não retornou dados." };
+            if (!data) {
+                return { success: false, message: "A função não retornou nenhum dado (Corpo vazio)." };
+            }
+
+            return data;
         } catch (e: any) {
-            console.error("Erro crítico no DatabaseService:", e);
+            console.error("Erro capturado no DatabaseService:", e);
+            
+            if (e.message && e.message.includes('Unexpected end of JSON input')) {
+                return { 
+                    success: false, 
+                    message: "A sincronização falhou: O servidor retornou uma resposta vazia ou inválida. Verifique se você fez o deploy da função 'sync-prices' corretamente no terminal com 'supabase functions deploy sync-prices'." 
+                };
+            }
+
             return { 
                 success: false, 
-                message: "Falha catastrófica de rede ao tentar sincronizar." 
+                message: `Falha técnica: ${e.message || 'Erro de rede'}` 
             };
         }
     }
