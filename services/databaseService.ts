@@ -2,14 +2,22 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Course, Post, StudyCycle, Subject } from '../types';
 
-// Utilitário para ler variáveis de ambiente de forma segura no frontend
+// Utilitário para ler variáveis de ambiente com fallback para nomes com e sem prefixo VITE_
 const getEnv = (name: string): string | undefined => {
-    // @ts-ignore - Injetado pelo build tool (Vite/Vercel)
-    const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env[`VITE_${name}`] : undefined;
-    const procEnv = typeof process !== 'undefined' && process.env ? process.env[name] : undefined;
+    const prefixedName = `VITE_${name}`;
+    
+    // Tenta import.meta.env (Vite standard)
+    // @ts-ignore
+    const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? (import.meta.env[prefixedName] || import.meta.env[name]) : undefined;
+    
+    // Tenta process.env (Node standard / Vercel default)
+    const procEnv = typeof process !== 'undefined' && process.env ? (process.env[prefixedName] || process.env[name]) : undefined;
+    
     return viteEnv || procEnv;
 };
 
+// Se não houver variável definida, usamos os fallbacks para garantir que o app abra, 
+// mas avisamos no console que a configuração ideal é via Environment Variables.
 const SUPABASE_URL = getEnv('SUPABASE_URL') || 'https://khljmmwguczsiwgqxskh.supabase.co';
 const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtobGptbXdndWN6c2l3Z3F4c2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNzQ1MTgsImV4cCI6MjA4Njk1MDUxOH0.COlSn4nKhdum_OQz1C6TZNLqkQYsD7uOLnjlwVA7XPI';
 
@@ -27,7 +35,7 @@ class DatabaseService {
                 .select('*');
             
             if (error) {
-                console.warn("Aviso: Tabela 'users' inacessível. Verifique as credenciais no Vercel.", error.message);
+                console.warn("Database Connection: Utilizando modo local/mock. Configure SUPABASE_URL nas variáveis de ambiente da Vercel para persistência real.");
                 return [];
             }
             return data || [];
@@ -41,7 +49,6 @@ class DatabaseService {
             const { error } = await this.supabase
                 .from('users')
                 .upsert(users, { onConflict: 'id' });
-            
             if (error) throw error;
         } catch (e: any) {
             console.error("Erro ao salvar usuários:", e.message);

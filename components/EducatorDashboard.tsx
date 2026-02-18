@@ -43,7 +43,7 @@ const LaunchStep: React.FC<{
 );
 
 const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, onApplyLogo }) => {
-  const [activeTab, setActiveTab] = useState<'students' | 'marketing' | 'setup'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'marketing' | 'setup'>('setup');
   const students = user.studentIds?.map(id => allUsers.find(u => u.id === id)).filter(Boolean) as User[];
 
   return (
@@ -106,89 +106,100 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
         )}
 
         {activeTab === 'setup' && (
-            <div className="space-y-12">
-                <div className="text-center max-w-2xl mx-auto">
-                    <h2 className="text-3xl font-black mb-4">Como colocar seu App no ar hoje</h2>
-                    <p className="text-slate-500 font-medium leading-relaxed">Siga estes passos para que o deploy na Vercel funcione de primeira.</p>
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                
+                {/* GUIA DE LOCALIZAÇÃO VERCEL */}
+                <div className="bg-indigo-600 rounded-[2rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 text-8xl">▲</div>
+                    <div className="max-w-3xl relative z-10">
+                        <h2 className="text-3xl font-black mb-4">Ajuste Final na Vercel</h2>
+                        <p className="text-indigo-100 font-medium mb-8 leading-relaxed">
+                            O erro de build aconteceu porque faltava o plugin do React para o Vite. Eu já adicionei nos arquivos agora. Para terminar, configure as chaves assim:
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                        <div className="bg-white/10 rounded-3xl p-8 border border-white/20">
+                            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300 mb-6">Passo 1: Abrir Configurações</h4>
+                            <ol className="space-y-4 font-bold text-sm">
+                                <li className="flex items-start space-x-3">
+                                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] shrink-0">1</span>
+                                    <span>No painel da Vercel, clique no seu projeto (edu-quest).</span>
+                                </li>
+                                <li className="flex items-start space-x-3">
+                                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] shrink-0">2</span>
+                                    <span>No menu superior (azul), clique na aba <strong>Settings</strong>.</span>
+                                </li>
+                                <li className="flex items-start space-x-3">
+                                    <span className="bg-white text-indigo-600 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] shrink-0">3</span>
+                                    <span>No menu à esquerda, procure por <strong>Environment Variables</strong>.</span>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div className="bg-slate-900 rounded-3xl p-8 border border-indigo-400/30">
+                            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-400 mb-6">Passo 2: Adicionar Chaves</h4>
+                            <div className="space-y-4">
+                                <div className="p-3 bg-white/5 rounded-xl flex justify-between items-center border border-white/10">
+                                    <code className="text-indigo-400 font-mono text-xs">API_KEY</code>
+                                    <span className="text-[10px] opacity-40">Google AI Studio</span>
+                                </div>
+                                <div className="p-3 bg-white/5 rounded-xl flex justify-between items-center border border-white/10">
+                                    <code className="text-indigo-400 font-mono text-xs">SUPABASE_URL</code>
+                                    <span className="text-[10px] opacity-40">Supabase API URL</span>
+                                </div>
+                                <div className="p-3 bg-white/5 rounded-xl flex justify-between items-center border border-white/10">
+                                    <code className="text-indigo-400 font-mono text-xs">SUPABASE_ANON_KEY</code>
+                                    <span className="text-[10px] opacity-40">Supabase Anon Key</span>
+                                </div>
+                            </div>
+                            <p className="mt-6 text-[10px] text-center text-indigo-300/60 font-medium">
+                                Após salvar as 3, vá em <strong>Deployments</strong> e clique em <strong>Redeploy</strong>.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    
                     <LaunchStep 
                         number="01" 
-                        title="Pegar apenas a Chave (API_KEY)" 
-                        platform="Google AI Studio" 
+                        title="Google API Key" 
+                        platform="AI Studio" 
                         icon="🤖" 
                         color="border-blue-500"
-                        warning="NÃO use a opção de 'Create Repo' aqui. Pegue apenas a Key."
                     >
-                        <p>Acesse <a href="https://aistudio.google.com" target="_blank" className="text-blue-500 underline">AI Studio</a>.</p>
-                        <p>Clique em <strong>"Get API Key"</strong>.</p>
-                        <p>Crie uma chave e copie o código que começa com <code>AIza...</code></p>
+                        <p>Pegue a chave que começa com <code>AIza...</code> no AI Studio.</p>
                     </LaunchStep>
 
                     <LaunchStep 
                         number="02" 
-                        title="Hospedar o Código Fonte" 
+                        title="Vite Config" 
                         platform="GitHub" 
-                        icon="🐙" 
+                        icon="📦" 
                         color="border-slate-900"
                     >
-                        <p>Crie um repositório no GitHub.</p>
-                        <p>Certifique-se que os arquivos <strong>package.json</strong> e <strong>.npmrc</strong> estão na pasta raiz.</p>
+                        <p>O <code>vite.config.ts</code> agora está incluído para evitar erros de compilação.</p>
                     </LaunchStep>
 
                     <LaunchStep 
                         number="03" 
-                        title="Colocar o Site Online" 
+                        title="Variáveis" 
                         platform="Vercel" 
-                        icon="▲" 
+                        icon="🔑" 
                         color="border-indigo-500"
-                        tip="Mantenha o banco no seu perfil PESSOAL do Supabase. Copie as chaves para cá."
                     >
-                        <p>No Vercel, importe seu projeto do GitHub.</p>
-                        <p>Em <strong>Environment Variables</strong>, adicione:</p>
-                        <div className="space-y-1 mt-2">
-                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">API_KEY = [Key do Google]</p>
-                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">SUPABASE_URL = [URL do seu projeto]</p>
-                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">SUPABASE_ANON_KEY = [Sua Anon Key]</p>
-                        </div>
+                        <p>Siga o guia acima para encontrar o menu oculto da Vercel.</p>
                     </LaunchStep>
 
                     <LaunchStep 
                         number="04" 
-                        title="Vincular Pagamentos" 
-                        platform="Supabase + Hotmart" 
-                        icon="🔥" 
-                        color="border-orange-500"
+                        title="Redeploy" 
+                        platform="Vercel" 
+                        icon="🚀" 
+                        color="border-emerald-500"
                     >
-                        <p>No Supabase, dê deploy no <code>hotmart-webhook</code>.</p>
-                        <p>Cole a URL resultante na Hotmart (Versão 2.0.0).</p>
+                        <p>Sempre dê Redeploy após mudar as variáveis de ambiente.</p>
                     </LaunchStep>
-
-                </div>
-
-                <div className="bg-red-50 dark:bg-red-900/10 p-8 rounded-[2rem] border-2 border-red-100 dark:border-red-900/30">
-                    <div className="flex items-center space-x-3 mb-6">
-                        <span className="text-3xl">🆘</span>
-                        <h3 className="text-xl font-black text-red-700 dark:text-red-400">Corrigindo o Erro de Instalação (ERESOLVE)</h3>
-                    </div>
-                    <p className="text-red-600/80 dark:text-red-400/80 font-medium leading-relaxed mb-6">
-                        Para resolver o erro de build que você teve, você tem duas opções infalíveis:
-                    </p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
-                            <h4 className="text-xs font-black uppercase text-slate-400 mb-2 tracking-widest">Opção A: Arquivo</h4>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Verifique se o arquivo <strong>.npmrc</strong> foi enviado para o GitHub com a linha:</p>
-                            <code className="block mt-2 bg-slate-100 dark:bg-slate-900 p-2 rounded font-mono text-xs">legacy-peer-deps=true</code>
-                        </div>
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
-                            <h4 className="text-xs font-black uppercase text-slate-400 mb-2 tracking-widest">Opção B: Painel Vercel</h4>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Em <strong>Settings > General > Install Command</strong>, ative o Override e cole:</p>
-                            <code className="block mt-2 bg-slate-100 dark:bg-slate-900 p-2 rounded font-mono text-xs">npm install --legacy-peer-deps</code>
-                        </div>
-                    </div>
                 </div>
             </div>
         )}
