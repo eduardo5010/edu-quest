@@ -98,7 +98,7 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                             <ol className="space-y-4">
                                 <li className="flex items-start space-x-3">
                                     <span className="bg-orange-500 text-white w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-                                    <span className="text-sm font-bold">Na Hotmart: Vá em Ferramentas > Webhook (V2.0.0).</span>
+                                    <span className="text-sm font-bold">Na Hotmart: Vá em Ferramentas &gt; Webhook (V2.0.0).</span>
                                 </li>
                                 <li className="flex items-start space-x-3">
                                     <span className="bg-orange-500 text-white w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">2</span>
