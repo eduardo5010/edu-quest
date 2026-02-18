@@ -5,13 +5,25 @@ import { Course, Module, Lesson, QuizQuestion, User, Subject, ScheduleSlot, Ques
 const EMOJI_ICONS = ['📚', '💡', '🚀', '🎨', '💻', '🧪', '🏛️', '🎵', '📈', '🌍'];
 
 class GeminiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
 
   constructor() {
-    if (!process.env.API_KEY) {
-      throw new Error("API_KEY environment variable not set");
+    // Não trava mais o app se a chave estiver faltando no carregamento
+    const apiKey = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
+    if (apiKey) {
+      this.ai = new GoogleGenAI({ apiKey });
     }
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+
+  private getInterface() {
+    if (!this.ai) {
+      const apiKey = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
+      if (!apiKey) {
+        throw new Error("A chave de API (API_KEY) não foi configurada nas variáveis de ambiente.");
+      }
+      this.ai = new GoogleGenAI({ apiKey });
+    }
+    return this.ai;
   }
 
   async generateQuizFeedback(question: string, incorrectAnswer: string, correctAnswer: string): Promise<string> {
@@ -31,7 +43,7 @@ class GeminiService {
     `;
 
     try {
-        const response = await this.ai.models.generateContent({
+        const response = await this.getInterface().models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
         });
@@ -46,7 +58,7 @@ class GeminiService {
     const prompt = `Gere uma pergunta instigante ou um fato curioso sobre aprendizado, tecnologia ou crescimento pessoal para uma rede social educacional.`;
     
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
       });
@@ -91,8 +103,7 @@ class GeminiService {
     Estruture em 2-3 módulos, com 3-4 lições cada.
     Responda em PORTUGUÊS.`;
 
-    // Usando Gemini 3 Pro para tarefas complexas de estruturação de conhecimento
-    const response = await this.ai.models.generateContent({
+    const response = await this.getInterface().models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
@@ -130,7 +141,6 @@ class GeminiService {
         })
     );
 
-
     return {
       id: courseId,
       title: outline.title,
@@ -157,7 +167,7 @@ class GeminiService {
             const prompt = `Escreva uma explicação concisa e fácil de entender para a lição "${lessonTitle}" do curso "${courseTopic}". 
             Use tom didático. Se houver fórmulas, use LaTeX. Responda em Português.`;
             
-            const response = await this.ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
+            const response = await this.getInterface().models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
             return { type: 'text', content: response.text };
         }
     }
@@ -187,7 +197,7 @@ class GeminiService {
 
     const prompt = `Crie um exercício de programação em JavaScript para a lição "${lessonTitle}". Responda em Português.`;
     
-    const response = await this.ai.models.generateContent({
+    const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
@@ -209,7 +219,6 @@ class GeminiService {
     };
   }
 
-  // Added: generateCodeHint to provide AI-powered tips for coding exercises
   async generateCodeHint(instructions: string, userCode: string, failedTest: string): Promise<string> {
     const prompt = `Você é um tutor de programação amigável. Um estudante está com dificuldades em um exercício de JavaScript.
     O teste que falhou foi: "${failedTest}".
@@ -222,7 +231,7 @@ class GeminiService {
     Forneça uma dica curta e útil em Português que ajude o estudante a encontrar o erro por conta própria. Não dê a solução completa. Use tom encorajador.`;
 
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
       });
@@ -239,7 +248,7 @@ class GeminiService {
   }
 
   private async generateQuiz(lessonTitle: string, courseTopic: string): Promise<QuizQuestion[]> {
-      const prompt = `Crie um quiz de múltipla escolha with 2 questões sobre "${lessonTitle}". Responda em Português.`
+      const prompt = `Crie um quiz de múltipla escolha com 2 questões sobre "${lessonTitle}". Responda em Português.`
       return this.generateQuizFromPrompt(prompt);
   }
 
@@ -259,7 +268,7 @@ class GeminiService {
           }
       }
 
-      const response = await this.ai.models.generateContent({
+      const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
@@ -298,7 +307,7 @@ class GeminiService {
 
     const prompt = `Analise o tópico "${subjectName}". Dê um resumo em Português.`;
 
-    const response = await this.ai.models.generateContent({
+    const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
@@ -328,7 +337,7 @@ class GeminiService {
     
     const prompt = `Crie um cronograma de estudos equilibrado baseado nos interesses do usuário.`;
     
-    const response = await this.ai.models.generateContent({
+    const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
@@ -364,7 +373,7 @@ class GeminiService {
 
     const prompt = `Gere um simulado de 5 questões para a prova "${examType}" focado em "${subject}". Responda em Português.`;
 
-    const response = await this.ai.models.generateContent({
+    const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { responseMimeType: 'application/json', responseSchema: quizSchema }
@@ -393,7 +402,7 @@ class GeminiService {
   
   async analyzeMockTestPerformance(questions: MockTestQuestion[], userAnswers: Record<string, string>): Promise<string> {
       const prompt = `Analise o desempenho do aluno no simulado e dê feedback em Português usando Markdown.`;
-      const response = await this.ai.models.generateContent({
+      const response = await this.getInterface().models.generateContent({
           model: 'gemini-3-flash-preview',
           contents: prompt,
       });

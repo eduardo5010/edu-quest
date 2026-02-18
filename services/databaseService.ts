@@ -16,8 +16,7 @@ const getEnv = (name: string): string | undefined => {
     return viteEnv || procEnv;
 };
 
-// Se não houver variável definida, usamos os fallbacks para garantir que o app abra, 
-// mas avisamos no console que a configuração ideal é via Environment Variables.
+// Se não houver variável definida, usamos os fallbacks para garantir que o app abra
 const SUPABASE_URL = getEnv('SUPABASE_URL') || 'https://khljmmwguczsiwgqxskh.supabase.co';
 const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtobGptbXdndWN6c2l3Z3F4c2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNzQ1MTgsImV4cCI6MjA4Njk1MDUxOH0.COlSn4nKhdum_OQz1C6TZNLqkQYsD7uOLnjlwVA7XPI';
 
@@ -35,7 +34,7 @@ class DatabaseService {
                 .select('*');
             
             if (error) {
-                console.warn("Database Connection: Utilizando modo local/mock. Configure SUPABASE_URL nas variáveis de ambiente da Vercel para persistência real.");
+                console.warn("Database Connection Error. Mocking data.");
                 return [];
             }
             return data || [];
@@ -68,41 +67,49 @@ class DatabaseService {
     }
 
     async getCourses(): Promise<Course[]> {
-        const { data, error } = await this.supabase.from('courses').select('*');
-        if (error) return [];
-        return data || [];
+        try {
+            const { data, error } = await this.supabase.from('courses').select('*');
+            if (error) return [];
+            return data || [];
+        } catch(e) { return []; }
     }
 
     async saveCourse(course: Course): Promise<void> {
-        await this.supabase.from('courses').insert(course);
+        try { await this.supabase.from('courses').insert(course); } catch(e) {}
     }
 
     async getPosts(): Promise<Post[]> {
-        const { data, error } = await this.supabase.from('posts').select('*').order('timestamp', { ascending: false });
-        if (error) return [];
-        return data || [];
+        try {
+            const { data, error } = await this.supabase.from('posts').select('*').order('timestamp', { ascending: false });
+            if (error) return [];
+            return data || [];
+        } catch(e) { return []; }
     }
 
     async savePosts(posts: Post[]): Promise<void> {
-        await this.supabase.from('posts').upsert(posts, { onConflict: 'id' });
+        try { await this.supabase.from('posts').upsert(posts, { onConflict: 'id' }); } catch(e) {}
     }
 
     async getCycles(): Promise<StudyCycle[]> {
-        const { data, error } = await this.supabase.from('study_cycles').select('*');
-        return data || [];
+        try {
+            const { data, error } = await this.supabase.from('study_cycles').select('*');
+            return data || [];
+        } catch(e) { return []; }
     }
 
     async saveCycles(cycles: StudyCycle[]): Promise<void> {
-        await this.supabase.from('study_cycles').upsert(cycles, { onConflict: 'id' });
+        try { await this.supabase.from('study_cycles').upsert(cycles, { onConflict: 'id' }); } catch(e) {}
     }
 
     async getSubjects(): Promise<Subject[]> {
-        const { data, error } = await this.supabase.from('subjects').select('*');
-        return data || [];
+        try {
+            const { data, error } = await this.supabase.from('subjects').select('*');
+            return data || [];
+        } catch(e) { return []; }
     }
 
     async saveSubjects(subjects: Subject[]): Promise<void> {
-        await this.supabase.from('subjects').upsert(subjects, { onConflict: 'id' });
+        try { await this.supabase.from('subjects').upsert(subjects, { onConflict: 'id' }); } catch(e) {}
     }
 }
 

@@ -41,10 +41,16 @@ type View =
   | { type: 'MOCK_TEST_SESSION', test: { id: string; examType: string; subject: string, questions: MockTestQuestion[] } }
   | { type: 'MOCK_TEST_RESULTS', resultId: string };
 
-const LoadingOverlay = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900 z-50 fixed inset-0">
+const LoadingOverlay = ({ onForceExit }: { onForceExit: () => void }) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 z-50 fixed inset-0">
         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-500"></div>
         <p className="mt-4 text-indigo-500 font-black animate-pulse">Sincronizando com EduQuest Cloud...</p>
+        <button 
+            onClick={onForceExit}
+            className="mt-8 text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-white transition-colors"
+        >
+            Demorando demais? Clique para pular o carregamento
+        </button>
     </div>
 );
 
@@ -60,8 +66,15 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('eduquest_custom_logo'));
 
   useEffect(() => {
+    // Timeout de segurança: Se não carregar em 6 segundos, libera a tela
+    const safetyTimeout = setTimeout(() => {
+        if (isLoading) {
+            console.warn("Carregamento demorado. Forçando liberação da interface.");
+            setIsLoading(false);
+        }
+    }, 6000);
+
     async function initData() {
-        setIsLoading(true);
         try {
             const [dbUsers, dbCourses, dbPosts, dbCycles, dbSubjects] = await Promise.all([
                 databaseService.getUsers(),
@@ -86,7 +99,8 @@ export default function App() {
                 });
             }
         } catch (error) {
-            console.error("Erro fatal na inicialização. Usando modo de emergência (Offline/Mocks).", error);
+            console.error("Erro na inicialização:", error);
+            // Fallback imediato para mocks em caso de erro
             setAllUsers(MOCK_USERS);
             setCourses(MOCK_COURSES);
             setPosts(MOCK_POSTS);
@@ -94,6 +108,7 @@ export default function App() {
             setSubjects(MOCK_SUBJECTS);
         } finally {
             setIsLoading(false);
+            clearTimeout(safetyTimeout);
         }
     }
     initData();
@@ -466,8 +481,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      <Suspense fallback={<LoadingOverlay />}>
-          {isLoading && <LoadingOverlay />}
+      <Suspense fallback={<LoadingOverlay onForceExit={() => setIsLoading(false)} />}>
+          {isLoading && <LoadingOverlay onForceExit={() => setIsLoading(false)} />}
           {showHeaderFooter && <Header customLogo={customLogo} user={currentUser} onNavigateHome={() => navigateTo({type: 'DASHBOARD'})} onLogout={handleLogout} onNavigateToProfile={() => navigateTo({type: 'PROFILE'})} onNavigateToCommunity={() => navigateTo({type: 'COMMUNITY'})} onNavigateToWallet={() => navigateTo({type: 'WALLET'})} onNavigateToStudyPlanner={() => navigateTo({type: 'STUDY_PLANNER'})} onNavigateToEducatorDashboard={() => navigateTo({type: 'EDUCATOR_DASHBOARD'})} onNavigateToMockTests={() => navigateTo({type: 'MOCK_TEST_LOBBY'})} />}
           <main className={`${showHeaderFooter ? 'p-4 sm:p-6 md:p-8 max-w-7xl mx-auto' : ''}`}>{renderContent()}</main>
           {view.type === 'STUDY_SESSION' && <PomodoroTimer onSessionComplete={() => handleItemCompletion(view.subjectId, 'subject', 1.0)} />}

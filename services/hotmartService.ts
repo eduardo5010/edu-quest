@@ -4,15 +4,39 @@ import { User } from '../types';
 
 class HotmartService {
     /**
-     * Sincroniza o status do usuário consultando o banco de dados.
-     * Se o Webhook da Hotmart já tiver rodado, o status no DB estará como 'premium'.
+     * Extrai o ID do projeto da URL do Supabase para montar a URL do Webhook
      */
+    getSupabaseProjectId(): string {
+        try {
+            // @ts-ignore
+            const url = (import.meta.env?.VITE_SUPABASE_URL || process.env?.SUPABASE_URL || "");
+            if (url) {
+                const match = url.match(/https:\/\/(.*?)\.supabase\.co/);
+                if (match && match[1]) return match[1];
+            }
+            // ID Padrão fallback baseado no seu screenshot
+            return "khljmmwguczsiwgqxskh";
+        } catch (e) {
+            return "khljmmwguczsiwgqxskh";
+        }
+    }
+
+    /**
+     * Retorna a URL correta no formato oficial: https://[ref].supabase.co/functions/v1/[name]
+     */
+    getWebhookUrl(): string {
+        const projectId = this.getSupabaseProjectId();
+        // A URL final deve ser exatamente como esta para evitar o 404
+        return `https://${projectId}.supabase.co/functions/v1/hotmart-webhook`;
+    }
+
     async syncUserWithHotmart(user: User): Promise<User | null> {
         try {
             const dbUsers = await databaseService.getUsers();
+            if (!dbUsers || dbUsers.length === 0) return null;
+            
             const freshUser = dbUsers.find(u => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase());
             
-            // Se no banco ele já for premium e no app local não for, retorna o usuário atualizado
             if (freshUser && freshUser.subscription === 'premium' && user.subscription !== 'premium') {
                 return freshUser;
             }
@@ -22,21 +46,10 @@ class HotmartService {
         return null;
     }
 
-    /**
-     * Validação visual do formato da transação da Hotmart (HP...)
-     */
     async validateTransactionFormat(transaction: string): Promise<boolean> {
         if (!transaction) return false;
         const cleanTransaction = transaction.trim().toUpperCase();
-        // Formato padrão Hotmart: HP + números/letras
         return /^HP[A-Z0-9]+$/.test(cleanTransaction) || cleanTransaction.startsWith("TEST");
-    }
-
-    /**
-     * Retorna a URL que o usuário deve colar na Hotmart (Exemplo para documentação)
-     */
-    getWebhookHelpUrl(supabaseProjectId: string): string {
-        return `https://${supabaseProjectId}.functions.supabase.co/hotmart-webhook`;
     }
 }
 
