@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, Suspense, startTransition } from 'react';
-import { Course, User, Post, Comment, Lesson, StudyCycle, Subject, ScheduleSlot, ReactionType, Certificate, MockTestQuestion, MockTestResult, SubscriptionPlan } from './types';
+import { Course, User, Post, Comment, Lesson, StudyCycle, Subject, ScheduleSlot, ReactionType, Certificate, MockTestQuestion, MockTestResult, SubscriptionPlan, AffiliateLink } from './types';
 import Dashboard from './components/Dashboard';
 import CourseDetail from './components/CourseDetail';
 import LessonView from './components/LessonView';
@@ -61,20 +61,22 @@ export default function App() {
   const [cycles, setCycles] = useState<StudyCycle[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [affiliateLinks, setAffiliateLinks] = useState<AffiliateLink[]>([]);
   const [view, setView] = useState<View>({ type: 'LANDING' });
   const [isLoading, setIsLoading] = useState(true);
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('eduquest_custom_logo'));
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
-        if (isLoading) {
-            console.warn("Carregamento demorado. Forçando liberação da interface.");
-            setIsLoading(false);
-        }
-    }, 6000);
+        if (isLoading) setIsLoading(false);
+    }, 8000);
 
     async function initData() {
         try {
+            // Pegar referência de afiliado na URL (?ref=user-123)
+            const urlParams = new URLSearchParams(window.location.search);
+            const refId = urlParams.get('ref') || urlParams.get('aff');
+            
             const [dbUsers, dbCourses, dbPosts, dbCycles, dbSubjects, dbPlans] = await Promise.all([
                 databaseService.getUsers(),
                 databaseService.getCourses(),
@@ -90,6 +92,14 @@ export default function App() {
             setCycles(dbCycles);
             setSubjects(dbSubjects);
             setPlans(dbPlans);
+
+            // Se existir um ref na URL, buscamos os links personalizados desse usuário
+            if (refId) {
+              const customLinks = await databaseService.getAffiliateLinks(refId);
+              if (customLinks && customLinks.length > 0) {
+                setAffiliateLinks(customLinks);
+              }
+            }
             
             const loggedInUser = await authService.getCurrentUser();
             if (loggedInUser) {
@@ -424,7 +434,7 @@ export default function App() {
         switch (view.type) {
             case 'REGISTER': return <Register onRegisterSuccess={(user) => handleRegisterSuccess(user, view.selectedPlan)} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
             case 'LOGIN': return <Login onLoginSuccess={handleLogin} onNavigateToRegister={() => navigateTo({type: 'REGISTER'})} />;
-            case 'LANDING': default: return <LandingPage plans={plans} onNavigateToRegister={(tier) => navigateTo({type: 'REGISTER', selectedPlan: tier})} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
+            case 'LANDING': default: return <LandingPage plans={plans} affiliateLinks={affiliateLinks} onNavigateToRegister={(tier) => navigateTo({type: 'REGISTER', selectedPlan: tier})} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
         }
     }
 

@@ -1,19 +1,25 @@
 
+export interface AffiliateLink {
+  user_id: string;
+  plan_tier: 'pro' | 'premium';
+  affiliate_url: string;
+}
+
 export interface LearningState {
-  strength: number; // A value from 0 to 1 representing memory strength
-  lastReviewed: string; // ISO date string
-  nextReviewDue: string; // ISO date string
+  strength: number; 
+  lastReviewed: string; 
+  nextReviewDue: string; 
   reviewHistory: {
     timestamp: string;
-    performance: number; // Score from 0 to 1
+    performance: number; 
   }[];
 }
 
 export interface SubjectContent {
     type: 'video' | 'pdf_summary';
     title: string;
-    url?: string; // For videos
-    summary?: string; // For PDF summaries
+    url?: string; 
+    summary?: string; 
 }
 
 export interface Subject {
@@ -31,14 +37,14 @@ export interface StudyCycle {
 
 export interface UnavailableSlot {
     day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-    startTime: string; // "HH:MM"
-    endTime: string; // "HH:MM"
+    startTime: string; 
+    endTime: string; 
 }
 
 export interface ScheduleSlot {
     day: string;
-    startTime: string; // "HH:MM"
-    endTime: string; // "HH:MM"
+    startTime: string; 
+    endTime: string; 
     subjectId: string;
     type: 'fixed' | 'rotating';
 }
@@ -61,10 +67,10 @@ export interface MockTestResult {
     examType: string;
     subject: string;
     questions: MockTestQuestion[];
-    userAnswers: Record<string, string>; // questionId: selectedOptionId
-    score: number; // 0 to 1
+    userAnswers: Record<string, string>; 
+    score: number; 
     durationSeconds: number;
-    completedDate: string; // ISO date string
+    completedDate: string; 
     aiAnalysis: string;
 }
 
@@ -92,9 +98,9 @@ export interface User {
   lastStudiedDate: string | null;
   enrolledCourseIds: string[];
   studyCycleIds: string[];
-  progress: Record<string, boolean>; // lessonId: isCompleted
-  completedModuleIds: string[]; // moduleIds
-  learningState: Record<string, LearningState>; // lessonId or subjectId
+  progress: Record<string, boolean>; 
+  completedModuleIds: string[]; 
+  learningState: Record<string, LearningState>; 
   achievements: Achievement[];
   certifications: Certificate[];
   roles: ('student' | 'creator' | 'teacher' | 'parent')[];
@@ -109,17 +115,14 @@ export interface User {
     individualCredits: number;
   };
   sleepSchedule: {
-      minBedtime: string; // "HH:MM"
-      maxWakeup: string; // "HH:MM"
+      minBedtime: string; 
+      maxWakeup: string; 
   };
   unavailableSlots: UnavailableSlot[];
   weeklySchedule: ScheduleSlot[];
   mockTestResults: MockTestResult[];
-  // For educators
   studentIds?: string[];
-  // For students
   teacherIds?: string[];
-  // For leagues
   weeklyXp?: number;
   league?: LeagueTier;
 }
@@ -146,7 +149,7 @@ export interface Lesson {
   title: string;
   type: 'video' | 'text' | 'quiz' | 'code-exercise' | 'project';
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  content: string; // Instructions for code-exercise, URL for video, text for text
+  content: string; 
   xp: number;
   quiz?: QuizQuestion[];
   exercise?: CodeExerciseDetails;
@@ -157,10 +160,9 @@ export interface CodeExerciseDetails {
   solution: string;
   tests: {
     description: string;
-    code: string; // Code to be evaluated, e.g., "add(2,2) === 4"
+    code: string; 
   }[];
 }
-
 
 export type QuestionType = 'multiple-choice' | 'fill-in-the-blank' | 'code-exercise';
 
@@ -204,6 +206,6 @@ export interface Post {
     authorAvatar: string;
     content: string;
     timestamp: string;
-    reactions: Record<string, ReactionType>; // userId: reactionType
+    reactions: Record<string, ReactionType>; 
     comments: Comment[];
 }

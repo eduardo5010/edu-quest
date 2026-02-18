@@ -1,22 +1,15 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { User, Course, Post, StudyCycle, Subject, SubscriptionPlan } from '../types';
+import { User, Course, Post, StudyCycle, Subject, SubscriptionPlan, AffiliateLink } from '../types';
 
-// Utilitário para ler variáveis de ambiente com fallback para nomes com e sem prefixo VITE_
 const getEnv = (name: string): string | undefined => {
     const prefixedName = `VITE_${name}`;
-    
-    // Tenta import.meta.env (Vite standard)
     // @ts-ignore
     const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? (import.meta.env[prefixedName] || import.meta.env[name]) : undefined;
-    
-    // Tenta process.env (Node standard / Vercel default)
     const procEnv = typeof process !== 'undefined' && process.env ? (process.env[prefixedName] || process.env[name]) : undefined;
-    
     return viteEnv || procEnv;
 };
 
-// Se não houver variável definida, usamos os fallbacks para garantir que o app abra
 const SUPABASE_URL = getEnv('SUPABASE_URL') || 'https://khljmmwguczsiwgqxskh.supabase.co';
 const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtobGptbXdndWN6c2l3Z3F4c2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNzQ1MTgsImV4cCI6MjA4Njk1MDUxOH0.COlSn4nKhdum_OQz1C6TZNLqkQYsD7uOLnjlwVA7XPI';
 
@@ -27,18 +20,62 @@ class DatabaseService {
         this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
+    async syncPlansWithHotmart(): Promise<{ success: boolean; message: string }> {
+        try {
+            console.log("Iniciando chamada da função sync-prices...");
+            
+            const { data, error } = await this.supabase.functions.invoke('sync-prices', {
+                method: 'POST'
+            });
+            
+            if (error) {
+                console.error("Erro reportado pelo Supabase SDK:", error);
+                
+                // Se cair aqui, a função foi alcançada mas retornou erro ou o navegador barrou
+                if (error.message && error.message.includes('Failed to send a request')) {
+                    return { 
+                        success: false, 
+                        message: "Erro de Conexão: A função não foi encontrada ou o navegador bloqueou a chamada (CORS). Verifique se você fez o 'deploy' da função no terminal." 
+                    };
+                }
+                return { success: false, message: `Erro: ${error.message}` };
+            }
+            
+            return data || { success: false, message: "A função respondeu mas não retornou dados." };
+        } catch (e: any) {
+            console.error("Erro crítico no DatabaseService:", e);
+            return { 
+                success: false, 
+                message: "Falha catastrófica de rede ao tentar sincronizar." 
+            };
+        }
+    }
+
+    async getAffiliateLinks(affiliateId: string): Promise<AffiliateLink[]> {
+        const { data, error } = await this.supabase
+            .from('affiliate_links')
+            .select('*')
+            .eq('user_id', affiliateId);
+        if (error) return [];
+        return data || [];
+    }
+
+    async saveAffiliateLinks(links: AffiliateLink[]): Promise<void> {
+        const { error } = await this.supabase
+            .from('affiliate_links')
+            .upsert(links, { onConflict: 'user_id,plan_tier' });
+        if (error) throw error;
+    }
+
     async getPlans(): Promise<SubscriptionPlan[]> {
         try {
             const { data, error } = await this.supabase
                 .from('plans')
                 .select('*')
                 .order('price', { ascending: true });
-            
             if (error) return [];
             return data || [];
-        } catch (e) {
-            return [];
-        }
+        } catch (e) { return []; }
     }
 
     async getUsers(): Promise<User[]> {
@@ -46,15 +83,9 @@ class DatabaseService {
             const { data, error } = await this.supabase
                 .from('users')
                 .select('*');
-            
-            if (error) {
-                console.warn("Database Connection Error. Mocking data.");
-                return [];
-            }
+            if (error) return [];
             return data || [];
-        } catch (e) {
-            return [];
-        }
+        } catch (e) { return []; }
     }
 
     async saveUsers(users: User[]): Promise<void> {
@@ -64,19 +95,39 @@ class DatabaseService {
                 .upsert(users, { onConflict: 'id' });
             if (error) throw error;
         } catch (e: any) {
-            console.error("Erro ao salvar usuários:", e.message);
+            console.error("Erro ao salvar lote de usuários:", e.message);
         }
     }
 
     async updateUser(user: User): Promise<void> {
         try {
+            const allowedFields = [
+                'name', 'email', 'password', 'avatarUrl', 'level', 'xp', 'streak', 
+                'lastStudiedDate', 'enrolledCourseIds', 'studyCycleIds', 'progress', 
+                'completedModuleIds', 'learningState', 'achievements', 'certifications', 
+                'roles', 'bio', 'followers', 'following', 'subscription', 'wallet', 
+                'weeklySchedule', 'mockTestResults', 'studentIds', 'teacherIds', 
+                'weeklyXp', 'league'
+            ];
+
+            const updateData: any = {};
+            allowedFields.forEach(field => {
+                if ((user as any)[field] !== undefined) {
+                    updateData[field] = (user as any)[field];
+                }
+            });
+
             const { error } = await this.supabase
                 .from('users')
-                .update(user)
+                .update(updateData)
                 .eq('id', user.id);
-            if (error) throw error;
-        } catch (e) {
-            console.error("Erro ao atualizar usuário no banco.");
+            
+            if (error) {
+                await this.supabase.from('users').update({ roles: user.roles }).eq('id', user.id);
+            }
+        } catch (e: any) {
+            console.error("Falha crítica ao atualizar usuário:", e.message);
+            throw e;
         }
     }
 

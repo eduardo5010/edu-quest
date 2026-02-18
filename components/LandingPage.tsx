@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import Logo from './Logo';
-import { SubscriptionPlan } from '../types';
+import { SubscriptionPlan, AffiliateLink } from '../types';
 
 interface LandingPageProps {
   plans: SubscriptionPlan[];
+  affiliateLinks?: AffiliateLink[];
   onNavigateToLogin: () => void;
   onNavigateToRegister: (tier?: 'pro' | 'premium' | 'free') => void;
 }
@@ -14,10 +15,13 @@ type Currency = 'BRL' | 'USD';
 const PricingCard: React.FC<{ 
     plan: SubscriptionPlan;
     activeCurrency: Currency;
+    affiliateLink?: string;
     onSelect: (method: 'hotmart' | 'stripe' | 'pix' | 'free') => void;
-}> = ({ plan, activeCurrency, onSelect }) => {
-    // Só exibe o plano se a moeda for a correta
+}> = ({ plan, activeCurrency, affiliateLink, onSelect }) => {
     if (plan.currency !== activeCurrency) return null;
+
+    // Prioriza o link de afiliado personalizado, senão usa o link global do plano
+    const finalLink = affiliateLink || plan.hotmart_link;
 
     return (
         <div className={`relative p-8 rounded-3xl transition-all duration-500 flex flex-col h-full ${
@@ -65,7 +69,10 @@ const PricingCard: React.FC<{
             ) : (
                 <div className="space-y-4">
                     <button 
-                        onClick={() => onSelect('hotmart')}
+                        onClick={() => {
+                            if (finalLink) window.open(finalLink, '_blank');
+                            onSelect('hotmart');
+                        }}
                         className={`w-full py-5 rounded-2xl font-black shadow-xl transform hover:-translate-y-1 transition-all flex flex-col items-center justify-center leading-tight ring-4 ${
                             plan.is_premium 
                             ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white ring-indigo-500/20' 
@@ -75,35 +82,27 @@ const PricingCard: React.FC<{
                         <span className="text-xs uppercase opacity-80 mb-1">Pagamento Seguro via</span>
                         <span className="text-lg">🔥 Comprar na Hotmart</span>
                     </button>
-                    
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-col items-center space-y-2">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Outras Formas</p>
-                        <div className="flex space-x-4 opacity-50 hover:opacity-100 transition-opacity">
-                            <button onClick={() => onSelect('pix')} className="text-xs font-black hover:text-emerald-500 transition-colors uppercase">Pix</button>
-                            <button onClick={() => onSelect('stripe')} className="text-xs font-black hover:text-indigo-500 transition-colors uppercase">Stripe</button>
-                        </div>
-                    </div>
+                    {affiliateLink && (
+                        <p className="text-[9px] text-center text-slate-400 font-black uppercase tracking-widest mt-2">✨ Link de Afiliado Ativo</p>
+                    )}
                 </div>
             )}
         </div>
     );
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ plans, onNavigateToLogin, onNavigateToRegister }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ plans, affiliateLinks = [], onNavigateToLogin, onNavigateToRegister }) => {
   const [currency, setCurrency] = useState<Currency>('BRL');
 
   const handleSelectPlan = (plan: SubscriptionPlan, method: 'hotmart' | 'stripe' | 'pix' | 'free') => {
       if (method === 'free') {
           onNavigateToRegister('free');
-      } else if (method === 'hotmart') {
-          window.open(plan.hotmart_link, '_blank'); 
-          onNavigateToRegister(plan.tier);
       } else {
           onNavigateToRegister(plan.tier);
       }
   };
 
-  // Fallback se não houver planos carregados
+  // Garante que mostramos os planos filtrados pela moeda selecionada
   const displayPlans = plans.length > 0 ? plans : [];
 
   return (
@@ -172,14 +171,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ plans, onNavigateToLogin, onN
                 {displayPlans.length > 0 ? (
                     displayPlans
                       .filter(p => p.currency === currency)
-                      .map(plan => (
-                        <PricingCard 
-                            key={plan.id}
-                            plan={plan}
-                            activeCurrency={currency}
-                            onSelect={(method) => handleSelectPlan(plan, method)}
-                        />
-                    ))
+                      .map(plan => {
+                        // Busca o link de afiliado específico para esse tier se houver
+                        const affLink = affiliateLinks.find(l => l.plan_tier === plan.tier)?.affiliate_url;
+                        return (
+                          <PricingCard 
+                              key={plan.id}
+                              plan={plan}
+                              activeCurrency={currency}
+                              affiliateLink={affLink}
+                              onSelect={(method) => handleSelectPlan(plan, method)}
+                          />
+                        );
+                      })
                 ) : (
                     <div className="col-span-3 text-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
@@ -198,20 +202,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ plans, onNavigateToLogin, onN
             </div>
         </section>
 
-        <section className="bg-indigo-600 py-24 px-6 text-center text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-indigo-700 rotate-2 transform scale-150 -translate-y-12"></div>
-            <div className="relative z-10 max-w-4xl mx-auto">
-                <h2 className="text-4xl sm:text-5xl font-black mb-6">Pronto para a Evolução?</h2>
-                <p className="text-xl text-indigo-100 mb-10 font-medium">Não importa onde você esteja, a EduQuest é a sua melhor ferramenta de estudos.</p>
-                <button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="px-12 py-6 bg-white text-indigo-600 rounded-3xl font-black text-xl shadow-2xl hover:bg-slate-50 transition-all transform hover:scale-105">Quero Começar Agora 🔥</button>
-            </div>
-        </section>
-
         <footer className="bg-slate-900 py-12 px-6 text-center text-slate-500">
             <p className="text-xs font-bold uppercase tracking-widest leading-loose">
                 &copy; 2024 EduQuest Cloud Learning Saga <br/>
                 O uso desta plataforma está sujeito aos termos de serviço. <br/>
-                EduQuest não garante resultados específicos, o sucesso depende do esforço individual.
+                EduQuest não garante resultados específicos.
             </p>
         </footer>
     </div>

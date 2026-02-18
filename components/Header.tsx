@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({ user, customLogo, onNavigateHome, onLog
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <button onClick={onNavigateHome} className="flex items-center space-x-2" disabled={!user}>
+            <button onClick={() => user && onNavigateHome()} className="flex items-center space-x-2">
               {customLogo ? (
                 <img src={customLogo} alt="EduQuest Logo" className="h-10 w-10 rounded-xl shadow-sm object-cover" />
               ) : (
@@ -60,15 +60,19 @@ const Header: React.FC<HeaderProps> = ({ user, customLogo, onNavigateHome, onLog
               )}
               <h1 className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">EduQuest</h1>
             </button>
-             <nav className="hidden md:flex space-x-6">
-                 <button onClick={onNavigateHome} disabled={!user} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Dashboard</button>
-                 <button onClick={onNavigateToStudyPlanner} disabled={!user} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Planner</button>
-                 <button onClick={onNavigateToMockTests} disabled={!user} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Simulados</button>
-                 <button onClick={onNavigateToCommunity} disabled={!user} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Community</button>
-                 {user?.roles.includes('teacher') && (
-                    <button onClick={onNavigateToEducatorDashboard} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Educator Panel</button>
-                 )}
-             </nav>
+             
+             {/* Navegação oculta antes do login */}
+             {user && (
+               <nav className="hidden md:flex space-x-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                   <button onClick={onNavigateHome} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Dashboard</button>
+                   <button onClick={onNavigateToStudyPlanner} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Planner</button>
+                   <button onClick={onNavigateToMockTests} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Simulados</button>
+                   <button onClick={onNavigateToCommunity} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Community</button>
+                   {user.roles.includes('teacher') && (
+                      <button onClick={onNavigateToEducatorDashboard} className="font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Educator Panel</button>
+                   )}
+               </nav>
+             )}
           </div>
           {user && (
             <div className="flex items-center space-x-4">
@@ -86,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({ user, customLogo, onNavigateHome, onLog
                     <button onClick={() => { onNavigateToWallet(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 w-full text-left">My Wallet</button>
                     <button onClick={() => { onNavigateToStudyPlanner(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 w-full text-left">Study Planner</button>
                     <button onClick={() => { onNavigateToMockTests(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 w-full text-left">Simulados</button>
-                     {user?.roles.includes('teacher') && (
+                     {user.roles.includes('teacher') && (
                         <button onClick={() => { onNavigateToEducatorDashboard(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 w-full text-left">Educator Panel</button>
                      )}
                     <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 w-full text-left">Logout</button>

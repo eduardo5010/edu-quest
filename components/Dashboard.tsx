@@ -28,7 +28,6 @@ const CourseCard: React.FC<{ course: Course, onSelect: () => void, progress?: nu
       </div>
       
       {isEnrolled ? (
-        // Fixed: Merged multiple className attributes into one
         <div className="mt-4 cursor-pointer" onClick={onSelect}>
           <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
             <div className="bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
@@ -81,6 +80,7 @@ const UserStats: React.FC<{ user: User }> = ({ user }) => {
 const Dashboard: React.FC<DashboardProps> = ({ user, courses, subjects, onSelectCourse, onEnrollCourse, onCreateCourse, onNavigateToSubscription, onSelectReview, onSelectStudySession, onNavigateToMockTests }) => {
   const userCourses = useMemo(() => courses.filter(c => user.enrolledCourseIds.includes(c.id)), [courses, user]);
   const communityCourses = useMemo(() => courses.filter(c => !user.enrolledCourseIds.includes(c.id)), [courses, user]);
+  const isTeacher = user.roles.includes('teacher');
 
   const calculateCourseProgress = (course: Course) => {
     const totalLessons = course.modules.reduce((acc, module) => acc + module.lessons.length, 0);
@@ -96,10 +96,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, courses, subjects, onSelect
             <h1 className="text-3xl font-black text-slate-900 dark:text-white">Olá, {user.name}! 👋</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">O que vamos aprender hoje na nossa jornada?</p>
         </div>
-        <button onClick={onCreateCourse} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black py-3 px-6 rounded-xl flex items-center justify-center space-x-2 transition-transform hover:scale-105 shadow-lg">
-          <span className="text-xl">✨</span>
-          <span>Criar Curso com IA</span>
-        </button>
+        <div className="flex items-center space-x-3">
+            {!isTeacher && (
+                <div className="hidden lg:block bg-indigo-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-indigo-100 dark:border-slate-700">
+                    <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Quer ensinar?</p>
+                    <p className="text-xs font-bold">Ative o modo educador no perfil!</p>
+                </div>
+            )}
+            <button onClick={onCreateCourse} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black py-3 px-6 rounded-xl flex items-center justify-center space-x-2 transition-transform hover:scale-105 shadow-lg">
+                <span className="text-xl">✨</span>
+                <span>Criar Curso com IA</span>
+            </button>
+        </div>
       </div>
 
       <UserStats user={user} />

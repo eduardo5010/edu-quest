@@ -9,8 +9,8 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister }) => {
-  const [email, setEmail] = useState('alex@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,7 +55,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister }) =
                 autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 placeholder-slate-500 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder="alex@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -69,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToRegister }) =
                 autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 placeholder-slate-500 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder="password123"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
