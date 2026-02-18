@@ -2,8 +2,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Course, Post, StudyCycle, Subject } from '../types';
 
-const SUPABASE_URL = 'https://khljmmwguczsiwgqxskh.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtobGptbXdndWN6c2l3Z3F4c2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNzQ1MTgsImV4cCI6MjA4Njk1MDUxOH0.COlSn4nKhdum_OQz1C6TZNLqkQYsD7uOLnjlwVA7XPI';
+// As chaves agora são lidas das variáveis de ambiente do sistema (Vercel/Local)
+// Se não existirem, usamos valores de fallback apenas para desenvolvimento local inicial
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://khljmmwguczsiwgqxskh.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtobGptbXdndWN6c2l3Z3F4c2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNzQ1MTgsImV4cCI6MjA4Njk1MDUxOH0.COlSn4nKhdum_OQz1C6TZNLqkQYsD7uOLnjlwVA7XPI';
 
 class DatabaseService {
     private supabase: SupabaseClient;
@@ -20,7 +22,7 @@ class DatabaseService {
                 .select('*');
             
             if (error) {
-                console.warn("Aviso: Tabela 'users' inacessível no Supabase. Usando dados locais.", error.message);
+                console.warn("Aviso: Tabela 'users' inacessível. Verifique as credenciais no Vercel.", error.message);
                 return [];
             }
             return data || [];
@@ -30,7 +32,6 @@ class DatabaseService {
     }
 
     async saveUsers(users: User[]): Promise<void> {
-        // Tentamos salvar, mas não travamos o app se falhar (erro de coluna)
         try {
             const { error } = await this.supabase
                 .from('users')
@@ -38,8 +39,7 @@ class DatabaseService {
             
             if (error) throw error;
         } catch (e: any) {
-            console.error("Erro crítico ao salvar no Supabase:", e.message);
-            // Fallback: Armazenamento local para a sessão atual
+            console.error("Erro ao salvar usuários:", e.message);
             localStorage.setItem('eduquest_fallback_users', JSON.stringify(users));
         }
     }

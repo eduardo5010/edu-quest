@@ -17,7 +17,8 @@ const LaunchStep: React.FC<{
     color: string;
     children: React.ReactNode;
     warning?: string;
-}> = ({ number, title, platform, icon, color, children, warning }) => (
+    tip?: string;
+}> = ({ number, title, platform, icon, color, children, warning, tip }) => (
     <div className={`bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border-t-8 ${color} flex flex-col h-full`}>
         <div className="flex justify-between items-start mb-4">
             <span className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">{number}</span>
@@ -28,6 +29,11 @@ const LaunchStep: React.FC<{
         <div className="text-sm text-slate-500 dark:text-slate-400 flex-grow space-y-3">
             {children}
         </div>
+        {tip && (
+            <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                <p className="text-[10px] text-indigo-600 font-bold italic">💡 Dica: {tip}</p>
+            </div>
+        )}
         {warning && (
             <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
                 <p className="text-[10px] text-red-500 font-bold uppercase italic">⚠️ Atenção: {warning}</p>
@@ -103,7 +109,7 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
             <div className="space-y-12">
                 <div className="text-center max-w-2xl mx-auto">
                     <h2 className="text-3xl font-black mb-4">Como colocar seu App no ar hoje</h2>
-                    <p className="text-slate-500 font-medium leading-relaxed">Não tente criar repositórios dentro do Google AI Studio. Siga esta linha de produção profissional.</p>
+                    <p className="text-slate-500 font-medium leading-relaxed">Siga estes passos para que o deploy na Vercel funcione de primeira.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -128,8 +134,8 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                         icon="🐙" 
                         color="border-slate-900"
                     >
-                        <p>Crie um repositório <strong>PRIVADO</strong> no <a href="https://github.com/new" target="_blank" className="text-slate-900 underline">GitHub</a>.</p>
-                        <p>Suba os arquivos deste projeto para lá via terminal ou upload direto no site.</p>
+                        <p>Crie um repositório no GitHub.</p>
+                        <p>Certifique-se que o arquivo <code>.npmrc</code> está na pasta raiz do seu projeto antes de subir.</p>
                     </LaunchStep>
 
                     <LaunchStep 
@@ -138,10 +144,15 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                         platform="Vercel" 
                         icon="▲" 
                         color="border-indigo-500"
+                        tip="Mantenha o banco no seu perfil PESSOAL do Supabase. Copie as chaves para cá."
                     >
-                        <p>No <a href="https://vercel.com" target="_blank" className="text-indigo-500 underline">Vercel</a>, importe seu projeto do GitHub.</p>
+                        <p>No Vercel, importe seu projeto do GitHub.</p>
                         <p>Em <strong>Environment Variables</strong>, adicione:</p>
-                        <p className="bg-slate-100 p-2 rounded text-[10px] font-mono break-all">API_KEY = [Sua Key do Passo 1]</p>
+                        <div className="space-y-1 mt-2">
+                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">API_KEY = [Key do Google]</p>
+                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">SUPABASE_URL = [URL do seu projeto]</p>
+                            <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-[9px] font-mono break-all">SUPABASE_ANON_KEY = [Sua Anon Key]</p>
+                        </div>
                     </LaunchStep>
 
                     <LaunchStep 
@@ -153,20 +164,33 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                     >
                         <p>No Supabase, dê deploy no <code>hotmart-webhook</code>.</p>
                         <p>Cole a URL resultante na Hotmart (Versão 2.0.0).</p>
-                        <p>Pronto! Venda aprovada = Aluno Premium.</p>
                     </LaunchStep>
 
                 </div>
 
-                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-8 rounded-[2rem] border-2 border-indigo-100 dark:border-indigo-800">
-                    <h3 className="text-xl font-black text-indigo-700 dark:text-indigo-400 mb-4 flex items-center space-x-2">
-                        <span>💡</span>
-                        <span>Dica para não errar:</span>
-                    </h3>
-                    <p className="text-indigo-600/80 dark:text-indigo-400/80 font-medium leading-relaxed">
-                        O erro de "repositório" no Google AI Studio acontece porque ele tenta criar um link com o Google Cloud (GCP), que é muito complexo. 
-                        <strong> O segredo é:</strong> Use o GitHub para o código e a Vercel para o site. O Google AI Studio serve <strong>SÓ</strong> para te dar a chave que faz a inteligência funcionar.
+                {/* SEÇÃO DE AJUDA PARA ERRO DE BUILD */}
+                <div className="bg-red-50 dark:bg-red-900/10 p-8 rounded-[2rem] border-2 border-red-100 dark:border-red-900/30">
+                    <div className="flex items-center space-x-3 mb-6">
+                        <span className="text-3xl">🆘</span>
+                        <h3 className="text-xl font-black text-red-700 dark:text-red-400">Socorro! Deu erro "ERESOLVE" na Vercel?</h3>
+                    </div>
+                    <p className="text-red-600/80 dark:text-red-400/80 font-medium leading-relaxed mb-6">
+                        Esse erro acontece porque alguns pacotes (como o de fórmulas matemáticas) ainda não "conhecem" o React 19. 
+                        Para resolver, você deve garantir que o arquivo <strong>.npmrc</strong> foi criado na raiz do projeto com o conteúdo:
+                        <br/>
+                        <code className="bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded font-bold text-red-800 dark:text-red-200">legacy-peer-deps=true</code>
                     </p>
+                    
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
+                        <h4 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest">Outra solução: Configuração na Vercel</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Se não quiser criar o arquivo, você pode mudar o comando de instalação na Vercel:</p>
+                        <ol className="text-sm space-y-2 list-decimal list-inside text-slate-600 dark:text-slate-400">
+                            <li>Vá em <strong>Settings</strong> > <strong>General</strong> na Vercel.</li>
+                            <li>Procure por <strong>"Install Command"</strong>.</li>
+                            <li>Ative o botão "Override" e cole: <code className="bg-slate-100 dark:bg-slate-700 p-1 rounded font-mono">npm install --legacy-peer-deps</code></li>
+                            <li>Salve e clique em <strong>Redeploy</strong> na aba Deployments.</li>
+                        </ol>
+                    </div>
                 </div>
             </div>
         )}
