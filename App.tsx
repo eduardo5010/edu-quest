@@ -25,7 +25,6 @@ import { databaseService } from './services/databaseService';
 import { srsService } from './services/srsService';
 import { geminiService } from './services/geminiService';
 import { hotmartService } from './services/hotmartService';
-import { MOCK_COURSES, MOCK_USERS, MOCK_POSTS, MOCK_CYCLES, MOCK_SUBJECTS } from './data/mockData';
 
 type View = 
   | { type: 'LANDING' } | { type: 'LOGIN' } | { type: 'REGISTER', selectedPlan?: 'pro' | 'premium' | 'free' }
@@ -66,7 +65,6 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('eduquest_custom_logo'));
 
   useEffect(() => {
-    // Timeout de segurança: Se não carregar em 6 segundos, libera a tela
     const safetyTimeout = setTimeout(() => {
         if (isLoading) {
             console.warn("Carregamento demorado. Forçando liberação da interface.");
@@ -84,14 +82,15 @@ export default function App() {
                 databaseService.getSubjects()
             ]);
 
-            setAllUsers(dbUsers.length > 0 ? dbUsers : MOCK_USERS);
-            setCourses(dbCourses.length > 0 ? dbCourses : MOCK_COURSES);
-            setPosts(dbPosts.length > 0 ? dbPosts : MOCK_POSTS);
-            setCycles(dbCycles.length > 0 ? dbCycles : MOCK_CYCLES);
-            setSubjects(dbSubjects.length > 0 ? dbSubjects : MOCK_SUBJECTS);
+            setAllUsers(dbUsers);
+            setCourses(dbCourses);
+            setPosts(dbPosts);
+            setCycles(dbCycles);
+            setSubjects(dbSubjects);
             
             const loggedInUser = await authService.getCurrentUser();
             if (loggedInUser) {
+                // Tenta sincronizar se o usuário existir no banco real
                 const syncedUser = await hotmartService.syncUserWithHotmart(loggedInUser);
                 setCurrentUser(syncedUser || loggedInUser);
                 startTransition(() => {
@@ -99,13 +98,7 @@ export default function App() {
                 });
             }
         } catch (error) {
-            console.error("Erro na inicialização:", error);
-            // Fallback imediato para mocks em caso de erro
-            setAllUsers(MOCK_USERS);
-            setCourses(MOCK_COURSES);
-            setPosts(MOCK_POSTS);
-            setCycles(MOCK_CYCLES);
-            setSubjects(MOCK_SUBJECTS);
+            console.error("Erro fatal na inicialização do banco:", error);
         } finally {
             setIsLoading(false);
             clearTimeout(safetyTimeout);
@@ -313,7 +306,7 @@ export default function App() {
         course.creator = currentUser.name;
         await databaseService.saveCourse(course);
         const updatedCourses = await databaseService.getCourses();
-        if (updatedCourses.length > 0) setCourses(updatedCourses);
+        setCourses(updatedCourses);
 
         const updatedUser = { ...currentUser, enrolledCourseIds: [...new Set([...currentUser.enrolledCourseIds, course.id])] };
         setCurrentUser(updatedUser);
@@ -332,11 +325,10 @@ export default function App() {
 
   const handleRegisterSuccess = async (newUser: User, selectedPlan?: 'pro' | 'premium' | 'free') => {
     const updatedUsers = await databaseService.getUsers();
-    if (updatedUsers.length > 0) setAllUsers(updatedUsers);
+    setAllUsers(updatedUsers);
     
-    // Configura o plano selecionado
     if (selectedPlan && selectedPlan !== 'free') {
-        newUser.subscription = 'premium'; // 'premium' mapeia para qualquer plano pago internamente
+        newUser.subscription = 'premium';
         newUser.wallet.globalCredits += (selectedPlan === 'premium' ? 30 : 10);
         await databaseService.updateUser(newUser);
     }
@@ -350,9 +342,9 @@ export default function App() {
     setIsLoading(true);
     try {
         const newPost: Post = { id: `post-${Date.now()}`, authorId: currentUser.id, authorName: currentUser.name, authorAvatar: currentUser.avatarUrl, content, timestamp: new Date().toISOString(), reactions: {}, comments: [], };
-        const newPosts = [newPost, ...posts];
-        await databaseService.savePosts(newPosts);
-        setPosts(newPosts);
+        await databaseService.savePosts([newPost, ...posts]);
+        const updatedPosts = await databaseService.getPosts();
+        setPosts(updatedPosts);
     } finally {
         setIsLoading(false);
     }
@@ -419,7 +411,7 @@ export default function App() {
           ]);
           
           const refreshedUsers = await databaseService.getUsers();
-          if (refreshedUsers.length > 0) setAllUsers(refreshedUsers);
+          setAllUsers(refreshedUsers);
       } finally {
           setIsLoading(false);
       }

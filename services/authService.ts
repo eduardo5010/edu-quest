@@ -1,7 +1,6 @@
 
 import { User } from '../types';
 import { databaseService } from './databaseService';
-import { MOCK_USERS } from '../data/mockData';
 
 const LOGGED_IN_USER_KEY = 'eduquest_user_email';
 
@@ -10,14 +9,8 @@ class AuthService {
         const email = sessionStorage.getItem(LOGGED_IN_USER_KEY);
         if (!email) return null;
         
-        // Tenta no banco primeiro
         const dbUsers = await databaseService.getUsers();
-        let foundUser = dbUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-        
-        // Se não achar no banco (ou erro de esquema), tenta nos Mocks
-        if (!foundUser) {
-            foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-        }
+        const foundUser = dbUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
         
         return foundUser ? { ...foundUser } : null;
     }
@@ -26,11 +19,9 @@ class AuthService {
         const trimmedEmail = email.trim().toLowerCase();
         const trimmedPassword = password_input.trim();
         
-        // Carrega usuários do banco e dos mocks para garantir login
         const dbUsers = await databaseService.getUsers();
-        const combinedUsers = [...MOCK_USERS, ...dbUsers];
         
-        const user = combinedUsers.find(u => 
+        const user = dbUsers.find(u => 
             u.email.toLowerCase() === trimmedEmail && 
             u.password === trimmedPassword
         );
@@ -84,12 +75,12 @@ class AuthService {
 
         try {
             await databaseService.saveUsers([...dbUsers, newUser]);
+            sessionStorage.setItem(LOGGED_IN_USER_KEY, newUser.email);
+            return { ...newUser };
         } catch (e) {
-            console.warn("Falha ao persistir novo usuário no Supabase, mas prosseguindo com login local.");
+            console.error("Erro ao registrar usuário no Supabase.");
+            return null;
         }
-        
-        sessionStorage.setItem(LOGGED_IN_USER_KEY, newUser.email);
-        return { ...newUser };
     }
 
     logout(): void {
