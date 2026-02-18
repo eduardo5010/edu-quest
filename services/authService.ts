@@ -1,0 +1,100 @@
+
+import { User } from '../types';
+import { databaseService } from './databaseService';
+import { MOCK_USERS } from '../data/mockData';
+
+const LOGGED_IN_USER_KEY = 'eduquest_user_email';
+
+class AuthService {
+    async getCurrentUser(): Promise<User | null> {
+        const email = sessionStorage.getItem(LOGGED_IN_USER_KEY);
+        if (!email) return null;
+        
+        // Tenta no banco primeiro
+        const dbUsers = await databaseService.getUsers();
+        let foundUser = dbUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        
+        // Se não achar no banco (ou erro de esquema), tenta nos Mocks
+        if (!foundUser) {
+            foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+        }
+        
+        return foundUser ? { ...foundUser } : null;
+    }
+
+    async login(email: string, password_input: string): Promise<User | null> {
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedPassword = password_input.trim();
+        
+        // Carrega usuários do banco e dos mocks para garantir login
+        const dbUsers = await databaseService.getUsers();
+        const combinedUsers = [...MOCK_USERS, ...dbUsers];
+        
+        const user = combinedUsers.find(u => 
+            u.email.toLowerCase() === trimmedEmail && 
+            u.password === trimmedPassword
+        );
+        
+        if (user) {
+            sessionStorage.setItem(LOGGED_IN_USER_KEY, user.email);
+            return { ...user };
+        }
+        return null;
+    }
+
+    async register(name: string, email: string, password_input: string): Promise<User | null> {
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedPassword = password_input.trim();
+        const dbUsers = await databaseService.getUsers();
+        
+        if (dbUsers.some(u => u.email.toLowerCase() === trimmedEmail)) {
+            return null;
+        }
+
+        const newUser: User = {
+            id: `user-${Date.now()}`,
+            name: name.trim(),
+            email: trimmedEmail,
+            password: trimmedPassword,
+            avatarUrl: `https://i.pravatar.cc/150?u=${trimmedEmail}`,
+            level: 1,
+            xp: 0,
+            streak: 0,
+            lastStudiedDate: null,
+            enrolledCourseIds: [],
+            studyCycleIds: [],
+            progress: {},
+            completedModuleIds: [],
+            learningState: {},
+            achievements: [],
+            certifications: [],
+            roles: ['student'],
+            followers: [],
+            following: [],
+            subscription: 'free',
+            wallet: {
+              globalCredits: 0,
+              individualCredits: 0,
+            },
+            sleepSchedule: { minBedtime: '23:00', maxWakeup: '07:00' },
+            unavailableSlots: [],
+            weeklySchedule: [],
+            mockTestResults: [],
+        };
+
+        try {
+            await databaseService.saveUsers([...dbUsers, newUser]);
+        } catch (e) {
+            console.warn("Falha ao persistir novo usuário no Supabase, mas prosseguindo com login local.");
+        }
+        
+        sessionStorage.setItem(LOGGED_IN_USER_KEY, newUser.email);
+        return { ...newUser };
+    }
+
+    logout(): void {
+        sessionStorage.removeItem(LOGGED_IN_USER_KEY);
+    }
+}
+
+export const authService = new AuthService();

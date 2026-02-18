@@ -1,0 +1,5 @@
+{
+  "name": "EduQuest: AI Learning Saga",
+  "description": "An AI-powered, gamified learning platform where users can take courses on any subject, create their own courses with AI assistance, and engage in an educational social network. Styled like Duolingo, it features points, levels, and streaks to make learning addictive and fun.",
+  "requestFramePermissions": []
+}

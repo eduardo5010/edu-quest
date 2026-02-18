@@ -1,0 +1,177 @@
+
+import React, { useState } from 'react';
+import { User } from '../types';
+import MarketingKit from './MarketingKit';
+
+interface EducatorDashboardProps {
+  user: User;
+  allUsers: User[];
+  onApplyLogo: (logoUrl: string) => void;
+}
+
+const LaunchStep: React.FC<{ 
+    number: string; 
+    title: string; 
+    platform: string;
+    icon: string;
+    color: string;
+    children: React.ReactNode;
+    warning?: string;
+}> = ({ number, title, platform, icon, color, children, warning }) => (
+    <div className={`bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border-t-8 ${color} flex flex-col h-full`}>
+        <div className="flex justify-between items-start mb-4">
+            <span className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">{number}</span>
+            <span className="text-3xl">{icon}</span>
+        </div>
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{platform}</h4>
+        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4 leading-tight">{title}</h3>
+        <div className="text-sm text-slate-500 dark:text-slate-400 flex-grow space-y-3">
+            {children}
+        </div>
+        {warning && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
+                <p className="text-[10px] text-red-500 font-bold uppercase italic">⚠️ Atenção: {warning}</p>
+            </div>
+        )}
+    </div>
+);
+
+const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, onApplyLogo }) => {
+  const [activeTab, setActiveTab] = useState<'students' | 'marketing' | 'setup'>('students');
+  const students = user.studentIds?.map(id => allUsers.find(u => u.id === id)).filter(Boolean) as User[];
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Painel Administrativo</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">Sua central de comando para o SaaS EduQuest.</p>
+            </div>
+            <div className="flex bg-slate-200 dark:bg-slate-700 p-1.5 rounded-2xl shadow-inner">
+                <button 
+                    onClick={() => setActiveTab('students')}
+                    className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeTab === 'students' ? 'bg-white dark:bg-slate-600 shadow-md text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    👥 Alunos
+                </button>
+                <button 
+                    onClick={() => setActiveTab('marketing')}
+                    className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeTab === 'marketing' ? 'bg-white dark:bg-slate-600 shadow-md text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    🎨 Branding
+                </button>
+                <button 
+                    onClick={() => setActiveTab('setup')}
+                    className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeTab === 'setup' ? 'bg-white dark:bg-slate-600 shadow-md text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    🚀 Mapa de Lançamento
+                </button>
+            </div>
+        </div>
+
+        {activeTab === 'students' && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 border-t-8 border-indigo-500">
+                <h2 className="text-2xl font-black mb-6">Alunos Matriculados</h2>
+                {students && students.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4">
+                        {students.map(student => (
+                            <div key={student.id} className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl flex items-center justify-between border-2 border-transparent hover:border-indigo-100 transition-all">
+                                <div className="flex items-center space-x-4">
+                                    <img src={student.avatarUrl} alt={student.name} className="w-14 h-14 rounded-full border-2 border-white shadow-md" />
+                                    <div>
+                                        <p className="font-black text-lg text-slate-900 dark:text-white">{student.name}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{student.email}</p>
+                                    </div>
+                                </div>
+                                <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full text-xs font-black uppercase">Ativo</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200">
+                        <p className="text-slate-400 font-bold">Nenhum aluno ainda. Divulgue seu link da Hotmart!</p>
+                    </div>
+                )}
+            </div>
+        )}
+
+        {activeTab === 'marketing' && (
+            <MarketingKit onApplyLogo={onApplyLogo} />
+        )}
+
+        {activeTab === 'setup' && (
+            <div className="space-y-12">
+                <div className="text-center max-w-2xl mx-auto">
+                    <h2 className="text-3xl font-black mb-4">Como colocar seu App no ar hoje</h2>
+                    <p className="text-slate-500 font-medium leading-relaxed">Não tente criar repositórios dentro do Google AI Studio. Siga esta linha de produção profissional.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <LaunchStep 
+                        number="01" 
+                        title="Pegar apenas a Chave (API_KEY)" 
+                        platform="Google AI Studio" 
+                        icon="🤖" 
+                        color="border-blue-500"
+                        warning="NÃO use a opção de 'Create Repo' aqui. Pegue apenas a Key."
+                    >
+                        <p>Acesse <a href="https://aistudio.google.com" target="_blank" className="text-blue-500 underline">AI Studio</a>.</p>
+                        <p>Clique em <strong>"Get API Key"</strong>.</p>
+                        <p>Crie uma chave e copie o código que começa com <code>AIza...</code></p>
+                    </LaunchStep>
+
+                    <LaunchStep 
+                        number="02" 
+                        title="Hospedar o Código Fonte" 
+                        platform="GitHub" 
+                        icon="🐙" 
+                        color="border-slate-900"
+                    >
+                        <p>Crie um repositório <strong>PRIVADO</strong> no <a href="https://github.com/new" target="_blank" className="text-slate-900 underline">GitHub</a>.</p>
+                        <p>Suba os arquivos deste projeto para lá via terminal ou upload direto no site.</p>
+                    </LaunchStep>
+
+                    <LaunchStep 
+                        number="03" 
+                        title="Colocar o Site Online" 
+                        platform="Vercel" 
+                        icon="▲" 
+                        color="border-indigo-500"
+                    >
+                        <p>No <a href="https://vercel.com" target="_blank" className="text-indigo-500 underline">Vercel</a>, importe seu projeto do GitHub.</p>
+                        <p>Em <strong>Environment Variables</strong>, adicione:</p>
+                        <p className="bg-slate-100 p-2 rounded text-[10px] font-mono break-all">API_KEY = [Sua Key do Passo 1]</p>
+                    </LaunchStep>
+
+                    <LaunchStep 
+                        number="04" 
+                        title="Vincular Pagamentos" 
+                        platform="Supabase + Hotmart" 
+                        icon="🔥" 
+                        color="border-orange-500"
+                    >
+                        <p>No Supabase, dê deploy no <code>hotmart-webhook</code>.</p>
+                        <p>Cole a URL resultante na Hotmart (Versão 2.0.0).</p>
+                        <p>Pronto! Venda aprovada = Aluno Premium.</p>
+                    </LaunchStep>
+
+                </div>
+
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-8 rounded-[2rem] border-2 border-indigo-100 dark:border-indigo-800">
+                    <h3 className="text-xl font-black text-indigo-700 dark:text-indigo-400 mb-4 flex items-center space-x-2">
+                        <span>💡</span>
+                        <span>Dica para não errar:</span>
+                    </h3>
+                    <p className="text-indigo-600/80 dark:text-indigo-400/80 font-medium leading-relaxed">
+                        O erro de "repositório" no Google AI Studio acontece porque ele tenta criar um link com o Google Cloud (GCP), que é muito complexo. 
+                        <strong> O segredo é:</strong> Use o GitHub para o código e a Vercel para o site. O Google AI Studio serve <strong>SÓ</strong> para te dar a chave que faz a inteligência funcionar.
+                    </p>
+                </div>
+            </div>
+        )}
+    </div>
+  );
+};
+
+export default EducatorDashboard;
