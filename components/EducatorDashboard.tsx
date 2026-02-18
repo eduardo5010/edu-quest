@@ -135,7 +135,7 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                         color="border-slate-900"
                     >
                         <p>Crie um repositório no GitHub.</p>
-                        <p>Certifique-se que o arquivo <code>.npmrc</code> está na pasta raiz do seu projeto antes de subir.</p>
+                        <p>Certifique-se que os arquivos <strong>package.json</strong> e <strong>.npmrc</strong> estão na pasta raiz.</p>
                     </LaunchStep>
 
                     <LaunchStep 
@@ -168,28 +168,26 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
 
                 </div>
 
-                {/* SEÇÃO DE AJUDA PARA ERRO DE BUILD */}
                 <div className="bg-red-50 dark:bg-red-900/10 p-8 rounded-[2rem] border-2 border-red-100 dark:border-red-900/30">
                     <div className="flex items-center space-x-3 mb-6">
                         <span className="text-3xl">🆘</span>
-                        <h3 className="text-xl font-black text-red-700 dark:text-red-400">Socorro! Deu erro "ERESOLVE" na Vercel?</h3>
+                        <h3 className="text-xl font-black text-red-700 dark:text-red-400">Corrigindo o Erro de Instalação (ERESOLVE)</h3>
                     </div>
                     <p className="text-red-600/80 dark:text-red-400/80 font-medium leading-relaxed mb-6">
-                        Esse erro acontece porque alguns pacotes (como o de fórmulas matemáticas) ainda não "conhecem" o React 19. 
-                        Para resolver, você deve garantir que o arquivo <strong>.npmrc</strong> foi criado na raiz do projeto com o conteúdo:
-                        <br/>
-                        <code className="bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded font-bold text-red-800 dark:text-red-200">legacy-peer-deps=true</code>
+                        Para resolver o erro de build que você teve, você tem duas opções infalíveis:
                     </p>
                     
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
-                        <h4 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest">Outra solução: Configuração na Vercel</h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Se não quiser criar o arquivo, você pode mudar o comando de instalação na Vercel:</p>
-                        <ol className="text-sm space-y-2 list-decimal list-inside text-slate-600 dark:text-slate-400">
-                            <li>Vá em <strong>Settings</strong> > <strong>General</strong> na Vercel.</li>
-                            <li>Procure por <strong>"Install Command"</strong>.</li>
-                            <li>Ative o botão "Override" e cole: <code className="bg-slate-100 dark:bg-slate-700 p-1 rounded font-mono">npm install --legacy-peer-deps</code></li>
-                            <li>Salve e clique em <strong>Redeploy</strong> na aba Deployments.</li>
-                        </ol>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
+                            <h4 className="text-xs font-black uppercase text-slate-400 mb-2 tracking-widest">Opção A: Arquivo</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Verifique se o arquivo <strong>.npmrc</strong> foi enviado para o GitHub com a linha:</p>
+                            <code className="block mt-2 bg-slate-100 dark:bg-slate-900 p-2 rounded font-mono text-xs">legacy-peer-deps=true</code>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-inner border border-red-100 dark:border-red-900/20">
+                            <h4 className="text-xs font-black uppercase text-slate-400 mb-2 tracking-widest">Opção B: Painel Vercel</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Em <strong>Settings > General > Install Command</strong>, ative o Override e cole:</p>
+                            <code className="block mt-2 bg-slate-100 dark:bg-slate-900 p-2 rounded font-mono text-xs">npm install --legacy-peer-deps</code>
+                        </div>
                     </div>
                 </div>
             </div>
