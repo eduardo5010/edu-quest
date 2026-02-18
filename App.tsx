@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, Suspense, startTransition } from 'react';
-import { Course, User, Post, Comment, Lesson, StudyCycle, Subject, ScheduleSlot, ReactionType, Certificate, MockTestQuestion, MockTestResult } from './types';
+import { Course, User, Post, Comment, Lesson, StudyCycle, Subject, ScheduleSlot, ReactionType, Certificate, MockTestQuestion, MockTestResult, SubscriptionPlan } from './types';
 import Dashboard from './components/Dashboard';
 import CourseDetail from './components/CourseDetail';
 import LessonView from './components/LessonView';
@@ -27,7 +27,7 @@ import { geminiService } from './services/geminiService';
 import { hotmartService } from './services/hotmartService';
 
 type View = 
-  | { type: 'LANDING' } | { type: 'LOGIN' } | { type: 'REGISTER', selectedPlan?: 'pro' | 'premium' | 'free' }
+  | { type: 'LANDING' } | { type: 'LOGIN' } | { type: 'REGISTER', selectedPlan?: string }
   | { type: 'DASHBOARD' } | { type: 'PROFILE' } | { type: 'COMMUNITY' }
   | { type: 'SUBSCRIPTION' } | { type: 'WALLET' } | { type: 'STUDY_PLANNER' }
   | { type: 'EDUCATOR_DASHBOARD' } | { type: 'USER_PROFILE', userId: string }
@@ -60,6 +60,7 @@ export default function App() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [cycles, setCycles] = useState<StudyCycle[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [view, setView] = useState<View>({ type: 'LANDING' });
   const [isLoading, setIsLoading] = useState(true);
   const [customLogo, setCustomLogo] = useState<string | null>(localStorage.getItem('eduquest_custom_logo'));
@@ -74,12 +75,13 @@ export default function App() {
 
     async function initData() {
         try {
-            const [dbUsers, dbCourses, dbPosts, dbCycles, dbSubjects] = await Promise.all([
+            const [dbUsers, dbCourses, dbPosts, dbCycles, dbSubjects, dbPlans] = await Promise.all([
                 databaseService.getUsers(),
                 databaseService.getCourses(),
                 databaseService.getPosts(),
                 databaseService.getCycles(),
-                databaseService.getSubjects()
+                databaseService.getSubjects(),
+                databaseService.getPlans()
             ]);
 
             setAllUsers(dbUsers);
@@ -87,10 +89,10 @@ export default function App() {
             setPosts(dbPosts);
             setCycles(dbCycles);
             setSubjects(dbSubjects);
+            setPlans(dbPlans);
             
             const loggedInUser = await authService.getCurrentUser();
             if (loggedInUser) {
-                // Tenta sincronizar se o usuário existir no banco real
                 const syncedUser = await hotmartService.syncUserWithHotmart(loggedInUser);
                 setCurrentUser(syncedUser || loggedInUser);
                 startTransition(() => {
@@ -323,13 +325,13 @@ export default function App() {
   const handleLogin = (user: User) => { setCurrentUser(user); navigateTo({type: 'DASHBOARD'}); }
   const handleLogout = () => { authService.logout(); setCurrentUser(null); navigateTo({type: 'LANDING'}); }
 
-  const handleRegisterSuccess = async (newUser: User, selectedPlan?: 'pro' | 'premium' | 'free') => {
+  const handleRegisterSuccess = async (newUser: User, selectedPlanTier?: string) => {
     const updatedUsers = await databaseService.getUsers();
     setAllUsers(updatedUsers);
     
-    if (selectedPlan && selectedPlan !== 'free') {
+    if (selectedPlanTier && selectedPlanTier !== 'free') {
         newUser.subscription = 'premium';
-        newUser.wallet.globalCredits += (selectedPlan === 'premium' ? 30 : 10);
+        newUser.wallet.globalCredits += (selectedPlanTier === 'premium' ? 30 : 10);
         await databaseService.updateUser(newUser);
     }
 
@@ -422,7 +424,7 @@ export default function App() {
         switch (view.type) {
             case 'REGISTER': return <Register onRegisterSuccess={(user) => handleRegisterSuccess(user, view.selectedPlan)} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
             case 'LOGIN': return <Login onLoginSuccess={handleLogin} onNavigateToRegister={() => navigateTo({type: 'REGISTER'})} />;
-            case 'LANDING': default: return <LandingPage onNavigateToRegister={(plan) => navigateTo({type: 'REGISTER', selectedPlan: plan})} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
+            case 'LANDING': default: return <LandingPage plans={plans} onNavigateToRegister={(tier) => navigateTo({type: 'REGISTER', selectedPlan: tier})} onNavigateToLogin={() => navigateTo({type: 'LOGIN'})} />;
         }
     }
 

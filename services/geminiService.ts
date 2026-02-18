@@ -1,29 +1,16 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Course, Module, Lesson, QuizQuestion, User, Subject, ScheduleSlot, QuestionType, MockTestQuestion } from '../types';
 
 const EMOJI_ICONS = ['📚', '💡', '🚀', '🎨', '💻', '🧪', '🏛️', '🎵', '📈', '🌍'];
 
 class GeminiService {
-  private ai: GoogleGenAI | null = null;
-
-  constructor() {
-    // Não trava mais o app se a chave estiver faltando no carregamento
-    const apiKey = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
-    if (apiKey) {
-      this.ai = new GoogleGenAI({ apiKey });
-    }
-  }
-
+  // Fix: Obtain API key exclusively from process.env.API_KEY and create a fresh instance for each request to ensure up-to-date configuration.
   private getInterface() {
-    if (!this.ai) {
-      const apiKey = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
-      if (!apiKey) {
-        throw new Error("A chave de API (API_KEY) não foi configurada nas variáveis de ambiente.");
-      }
-      this.ai = new GoogleGenAI({ apiKey });
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      throw new Error("A chave de API (API_KEY) não foi configurada nas variáveis de ambiente.");
     }
-    return this.ai;
+    return new GoogleGenAI({ apiKey });
   }
 
   async generateQuizFeedback(question: string, incorrectAnswer: string, correctAnswer: string): Promise<string> {
@@ -43,11 +30,12 @@ class GeminiService {
     `;
 
     try {
+        // Fix: Use gemini-3-flash-preview for basic text tasks like quiz feedback.
         const response = await this.getInterface().models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
         });
-        return response.text;
+        return response.text || "Tente pensar um pouco mais sobre o conceito central desta questão.";
     } catch (error) {
         console.error("Error generating quiz feedback:", error);
         return "Tente pensar um pouco mais sobre o conceito central desta questão.";
@@ -58,11 +46,12 @@ class GeminiService {
     const prompt = `Gere uma pergunta instigante ou um fato curioso sobre aprendizado, tecnologia ou crescimento pessoal para uma rede social educacional.`;
     
     try {
+      // Fix: Use gemini-3-flash-preview for generating short text ideas.
       const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
       });
-      return response.text;
+      return response.text || "Qual é a coisa mais interessante que você aprendeu esta semana?";
     } catch (error) {
         return "Qual é a coisa mais interessante que você aprendeu esta semana?";
     }
@@ -103,6 +92,7 @@ class GeminiService {
     Estruture em 2-3 módulos, com 3-4 lições cada.
     Responda em PORTUGUÊS.`;
 
+    // Fix: Using gemini-3-pro-preview for complex reasoning tasks like curriculum design.
     const response = await this.getInterface().models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -113,7 +103,9 @@ class GeminiService {
       },
     });
 
-    const outline = JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Falha ao obter resposta da IA para o curso.");
+    const outline = JSON.parse(text.trim());
     
     const courseId = `course-${Date.now()}`;
     const modules: Module[] = await Promise.all(
@@ -167,8 +159,9 @@ class GeminiService {
             const prompt = `Escreva uma explicação concisa e fácil de entender para a lição "${lessonTitle}" do curso "${courseTopic}". 
             Use tom didático. Se houver fórmulas, use LaTeX. Responda em Português.`;
             
+            // Fix: Use gemini-3-flash-preview for standard text explanations.
             const response = await this.getInterface().models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
-            return { type: 'text', content: response.text };
+            return { type: 'text', content: response.text || "" };
         }
     }
   }
@@ -197,16 +190,20 @@ class GeminiService {
 
     const prompt = `Crie um exercício de programação em JavaScript para a lição "${lessonTitle}". Responda em Português.`;
     
+    // Fix: Use gemini-3-pro-preview for coding and STEM related tasks.
     const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',
-            responseSchema: codeExerciseSchema
+            responseSchema: codeExerciseSchema,
+            thinkingConfig: { thinkingBudget: 2000 }
         }
     });
 
-    const exerciseData = JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Falha ao gerar exercício de código.");
+    const exerciseData = JSON.parse(text.trim());
 
     return {
         type: 'code-exercise',
@@ -231,9 +228,11 @@ class GeminiService {
     Forneça uma dica curta e útil em Português que ajude o estudante a encontrar o erro por conta própria. Não dê a solução completa. Use tom encorajador.`;
 
     try {
+      // Fix: Use gemini-3-pro-preview for high-quality coding assistance.
       const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
+        config: { thinkingConfig: { thinkingBudget: 1000 } }
       });
       return response.text || "Tente revisar a lógica do seu código.";
     } catch (error) {
@@ -268,6 +267,7 @@ class GeminiService {
           }
       }
 
+      // Fix: Use gemini-3-flash-preview for quiz generation.
       const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
@@ -276,7 +276,9 @@ class GeminiService {
             responseSchema: quizSchema
         }
       });
-      const quizData = JSON.parse(response.text);
+      const text = response.text;
+      if (!text) throw new Error("Falha ao gerar o quiz.");
+      const quizData = JSON.parse(text.trim());
 
       return quizData.map((q: any, index: number): QuizQuestion => {
         const questionId = `q-${Date.now()}-${index}`;
@@ -307,6 +309,7 @@ class GeminiService {
 
     const prompt = `Analise o tópico "${subjectName}". Dê um resumo em Português.`;
 
+    // Fix: Using gemini-3-flash-preview for summarization task.
     const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
@@ -316,7 +319,9 @@ class GeminiService {
         }
     });
 
-    return JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Falha ao analisar o assunto.");
+    return JSON.parse(text.trim());
   }
 
   async generateWeeklySchedule(user: User, subjects: Subject[]): Promise<ScheduleSlot[]> {
@@ -337,6 +342,7 @@ class GeminiService {
     
     const prompt = `Crie um cronograma de estudos equilibrado baseado nos interesses do usuário.`;
     
+    // Fix: Using gemini-3-flash-preview for schedule generation.
     const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
@@ -346,7 +352,9 @@ class GeminiService {
         },
     });
 
-    return JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Falha ao gerar o cronograma.");
+    return JSON.parse(text.trim());
   }
 
   async generateMockTest(examType: string, subject: string): Promise<{ questions: MockTestQuestion[] }> {
@@ -373,13 +381,20 @@ class GeminiService {
 
     const prompt = `Gere um simulado de 5 questões para a prova "${examType}" focado em "${subject}". Responda em Português.`;
 
+    // Fix: Use gemini-3-pro-preview for high-quality mock test generation.
     const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
-        config: { responseMimeType: 'application/json', responseSchema: quizSchema }
+        config: { 
+            responseMimeType: 'application/json', 
+            responseSchema: quizSchema,
+            thinkingConfig: { thinkingBudget: 4000 }
+        }
     });
 
-    const quizData = JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Falha ao gerar questões do simulado.");
+    const quizData = JSON.parse(text.trim());
 
     return {
         questions: quizData.questions.map((q: any, index: number): MockTestQuestion => {
@@ -401,12 +416,14 @@ class GeminiService {
   }
   
   async analyzeMockTestPerformance(questions: MockTestQuestion[], userAnswers: Record<string, string>): Promise<string> {
-      const prompt = `Analise o desempenho do aluno no simulado e dê feedback em Português usando Markdown.`;
+      const prompt = `Analise o desempenho do aluno no simulado e dê feedback em Português usando Markdown. Considere as questões: ${JSON.stringify(questions)} e as respostas do usuário: ${JSON.stringify(userAnswers)}`;
+      // Fix: Use gemini-3-pro-preview for deep performance analysis and reasoning.
       const response = await this.getInterface().models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-3-pro-preview',
           contents: prompt,
+          config: { thinkingConfig: { thinkingBudget: 4000 } }
       });
-      return response.text;
+      return response.text || "Não foi possível analisar o seu desempenho no momento.";
   }
   
   private determineDifficulty(lessonIndex: number, totalLessons: number): Lesson['difficulty'] {

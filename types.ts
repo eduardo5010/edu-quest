@@ -68,6 +68,18 @@ export interface MockTestResult {
     aiAnalysis: string;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  currency: 'BRL' | 'USD';
+  features: string[];
+  hotmart_link: string;
+  is_featured: boolean;
+  is_premium: boolean;
+  tier: 'free' | 'pro' | 'premium';
+}
+
 export interface User {
   id: string;
   name: string;

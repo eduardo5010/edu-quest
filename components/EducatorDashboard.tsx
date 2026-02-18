@@ -154,16 +154,15 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
 
                         <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
                             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-orange-400 mb-6">Como Ativar (Deploy)</h4>
-                            <p className="text-xs mb-4 opacity-70">Se você recebeu o erro <code className="text-red-400">supabase: command not found</code>, siga estes passos no seu terminal:</p>
+                            <p className="text-xs mb-4 opacity-70">Para evitar erros de permissão de pasta no Linux/macOS, use o comando <strong>npx</strong>:</p>
                             <div className="bg-black p-4 rounded-xl font-mono text-[11px] text-emerald-400 border border-emerald-900/30 space-y-2">
-                                <p className="opacity-50 text-[9px] text-white"># 1. Instale o Supabase CLI</p>
-                                <p>$ npm install -g supabase</p>
-                                <p className="opacity-50 text-[9px] text-white"># 2. Faça Login</p>
-                                <p>$ supabase login</p>
-                                <p className="opacity-50 text-[9px] text-white"># 3. Vincule seu projeto (ID: {hotmartService.getSupabaseProjectId()})</p>
-                                <p>$ supabase link --project-ref {hotmartService.getSupabaseProjectId()}</p>
-                                <p className="opacity-50 text-[9px] text-white"># 4. Envie a função</p>
-                                <p>$ supabase functions deploy hotmart-webhook</p>
+                                <p className="opacity-50 text-[9px] text-white"># 1. Faça Login no navegador</p>
+                                <p>$ npx supabase login</p>
+                                <p className="opacity-50 text-[9px] text-white"># 2. Vincule seu projeto (ID: {hotmartService.getSupabaseProjectId()})</p>
+                                <p>$ npx supabase link --project-ref {hotmartService.getSupabaseProjectId()}</p>
+                                <p className="opacity-50 text-[9px] text-white"># 3. Envie a função sem precisar instalar a CLI globalmente</p>
+                                <p>$ npx supabase functions deploy hotmart-webhook</p>
+                                <p>$ npx supabase functions deploy sync-prices</p>
                             </div>
                         </div>
                     </div>

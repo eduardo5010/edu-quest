@@ -1,6 +1,6 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { User, Course, Post, StudyCycle, Subject } from '../types';
+import { User, Course, Post, StudyCycle, Subject, SubscriptionPlan } from '../types';
 
 // Utilitário para ler variáveis de ambiente com fallback para nomes com e sem prefixo VITE_
 const getEnv = (name: string): string | undefined => {
@@ -25,6 +25,20 @@ class DatabaseService {
 
     constructor() {
         this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    async getPlans(): Promise<SubscriptionPlan[]> {
+        try {
+            const { data, error } = await this.supabase
+                .from('plans')
+                .select('*')
+                .order('price', { ascending: true });
+            
+            if (error) return [];
+            return data || [];
+        } catch (e) {
+            return [];
+        }
     }
 
     async getUsers(): Promise<User[]> {
