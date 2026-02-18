@@ -22,39 +22,30 @@ class DatabaseService {
 
     async syncPlansWithHotmart(): Promise<{ success: boolean; message: string }> {
         try {
-            console.log("Iniciando requisição para Edge Function...");
+            console.log("DatabaseService: Solicitando sincronização à Edge Function...");
             
             const { data, error } = await this.supabase.functions.invoke('sync-prices', {
                 method: 'POST'
             });
 
             if (error) {
-                console.error("Erro retornado pelo Supabase invoke:", error);
+                console.error("Erro no Invoke:", error);
                 return { 
                     success: false, 
-                    message: `Erro na Função: ${error.message || 'Falha na comunicação'}` 
+                    message: `Falha na função: ${error.message}` 
                 };
             }
             
-            if (!data) {
-                return { success: false, message: "A função não retornou nenhum dado (Corpo vazio)." };
-            }
-
-            return data;
+            return data || { success: false, message: "Resposta vazia do servidor." };
         } catch (e: any) {
-            console.error("Erro capturado no DatabaseService:", e);
-            
-            if (e.message && e.message.includes('Unexpected end of JSON input')) {
+            console.error("Erro na sincronização:", e);
+            if (e.message?.includes('JSON')) {
                 return { 
                     success: false, 
-                    message: "A sincronização falhou: O servidor retornou uma resposta vazia ou inválida. Verifique se você fez o deploy da função 'sync-prices' corretamente no terminal com 'supabase functions deploy sync-prices'." 
+                    message: "Erro de Formato: A função retornou algo que não é JSON. Isso geralmente acontece se o HOTMART_PRODUCT_ID estiver errado (UUID em vez de Número)." 
                 };
             }
-
-            return { 
-                success: false, 
-                message: `Falha técnica: ${e.message || 'Erro de rede'}` 
-            };
+            return { success: false, message: e.message || "Erro desconhecido na sincronização." };
         }
     }
 
@@ -129,9 +120,7 @@ class DatabaseService {
                 .update(updateData)
                 .eq('id', user.id);
             
-            if (error) {
-                await this.supabase.from('users').update({ roles: user.roles }).eq('id', user.id);
-            }
+            if (error) throw error;
         } catch (e: any) {
             console.error("Falha crítica ao atualizar usuário:", e.message);
             throw e;
@@ -139,49 +128,39 @@ class DatabaseService {
     }
 
     async getCourses(): Promise<Course[]> {
-        try {
-            const { data, error } = await this.supabase.from('courses').select('*');
-            if (error) return [];
-            return data || [];
-        } catch(e) { return []; }
+        const { data, error } = await this.supabase.from('courses').select('*');
+        return data || [];
     }
 
     async saveCourse(course: Course): Promise<void> {
-        try { await this.supabase.from('courses').insert(course); } catch(e) {}
+        await this.supabase.from('courses').insert(course);
     }
 
     async getPosts(): Promise<Post[]> {
-        try {
-            const { data, error } = await this.supabase.from('posts').select('*').order('timestamp', { ascending: false });
-            if (error) return [];
-            return data || [];
-        } catch(e) { return []; }
+        const { data, error } = await this.supabase.from('posts').select('*').order('timestamp', { ascending: false });
+        return data || [];
     }
 
     async savePosts(posts: Post[]): Promise<void> {
-        try { await this.supabase.from('posts').upsert(posts, { onConflict: 'id' }); } catch(e) {}
+        await this.supabase.from('posts').upsert(posts, { onConflict: 'id' });
     }
 
     async getCycles(): Promise<StudyCycle[]> {
-        try {
-            const { data, error } = await this.supabase.from('study_cycles').select('*');
-            return data || [];
-        } catch(e) { return []; }
+        const { data, error } = await this.supabase.from('study_cycles').select('*');
+        return data || [];
     }
 
     async saveCycles(cycles: StudyCycle[]): Promise<void> {
-        try { await this.supabase.from('study_cycles').upsert(cycles, { onConflict: 'id' }); } catch(e) {}
+        await this.supabase.from('study_cycles').upsert(cycles, { onConflict: 'id' });
     }
 
     async getSubjects(): Promise<Subject[]> {
-        try {
-            const { data, error } = await this.supabase.from('subjects').select('*');
-            return data || [];
-        } catch(e) { return []; }
+        const { data, error } = await this.supabase.from('subjects').select('*');
+        return data || [];
     }
 
     async saveSubjects(subjects: Subject[]): Promise<void> {
-        try { await this.supabase.from('subjects').upsert(subjects, { onConflict: 'id' }); } catch(e) {}
+        await this.supabase.from('subjects').upsert(subjects, { onConflict: 'id' });
     }
 }
 

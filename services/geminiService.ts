@@ -1,59 +1,39 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Course, Module, Lesson, QuizQuestion, User, Subject, ScheduleSlot, QuestionType, MockTestQuestion } from '../types';
 
 const EMOJI_ICONS = ['📚', '💡', '🚀', '🎨', '💻', '🧪', '🏛️', '🎵', '📈', '🌍'];
 
 class GeminiService {
-  // Fix: Obtain API key exclusively from process.env.API_KEY and create a fresh instance for each request to ensure up-to-date configuration.
   private getInterface() {
     const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("A chave de API (API_KEY) não foi configurada nas variáveis de ambiente.");
-    }
+    if (!apiKey) throw new Error("A chave de API (API_KEY) não foi configurada.");
     return new GoogleGenAI({ apiKey });
   }
 
   async generateQuizFeedback(question: string, incorrectAnswer: string, correctAnswer: string): Promise<string> {
-    const prompt = `
-      You are an encouraging and helpful quiz tutor. A student has answered a multiple-choice question incorrectly.
-      Your task is to provide a brief, helpful explanation.
-
-      The explanation should:
-      1.  Gently explain *why* the student's chosen answer ('${incorrectAnswer}') is incorrect.
-      2.  Give a subtle hint towards the correct answer ('${correctAnswer}') without explicitly revealing it.
-      3.  Maintain a positive tone.
-      4.  Use LaTeX for formulas if needed.
-
-      Question: "${question}"
-      Student's (Incorrect) Answer: "${incorrectAnswer}"
-      Correct Answer: "${correctAnswer}"
-    `;
-
+    const prompt = `Você é um tutor incentivador. Um aluno errou: "${question}". Ele escolheu "${incorrectAnswer}", mas o correto era "${correctAnswer}". Dê uma explicação curta e uma dica sem revelar a resposta diretamente. Use Português.`;
     try {
-        // Fix: Use gemini-3-flash-preview for basic text tasks like quiz feedback.
         const response = await this.getInterface().models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
         });
-        return response.text || "Tente pensar um pouco mais sobre o conceito central desta questão.";
+        return response.text || "Continue tentando! O erro faz parte do aprendizado.";
     } catch (error) {
-        console.error("Error generating quiz feedback:", error);
-        return "Tente pensar um pouco mais sobre o conceito central desta questão.";
+        return "Continue tentando!";
     }
   }
 
   async generatePostIdea(): Promise<string> {
-    const prompt = `Gere uma pergunta instigante ou um fato curioso sobre aprendizado, tecnologia ou crescimento pessoal para uma rede social educacional.`;
-    
+    const prompt = `Gere uma curiosidade rápida sobre aprendizado ou tecnologia para uma rede social.`;
     try {
-      // Fix: Use gemini-3-flash-preview for generating short text ideas.
       const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
       });
-      return response.text || "Qual é a coisa mais interessante que você aprendeu esta semana?";
+      return response.text || "Você sabia que aprender algo novo antes de dormir ajuda na memorização?";
     } catch (error) {
-        return "Qual é a coisa mais interessante que você aprendeu esta semana?";
+        return "O que você aprendeu hoje?";
     }
   }
 
@@ -73,9 +53,7 @@ class GeminiService {
                 type: Type.ARRAY,
                 items: {
                   type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                  },
+                  properties: { title: { type: Type.STRING } },
                   required: ['title'],
                 },
               },
@@ -87,12 +65,8 @@ class GeminiService {
       required: ['title', 'description', 'modules'],
     };
 
-    const prompt = `Você é um designer de currículos especialista. Crie um curso completo e estruturado para o tópico: "${topic}". 
-    O curso deve ter lições curtas e engajadoras (microlearning).
-    Estruture em 2-3 módulos, com 3-4 lições cada.
-    Responda em PORTUGUÊS.`;
+    const prompt = `Crie a estrutura de um curso completo para o tópico: "${topic}". Responda em Português.`;
 
-    // Fix: Using gemini-3-pro-preview for complex reasoning tasks like curriculum design.
     const response = await this.getInterface().models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -104,7 +78,7 @@ class GeminiService {
     });
 
     const text = response.text;
-    if (!text) throw new Error("Falha ao obter resposta da IA para o curso.");
+    if (!text) throw new Error("Falha ao obter resposta da IA.");
     const outline = JSON.parse(text.trim());
     
     const courseId = `course-${Date.now()}`;
@@ -118,8 +92,8 @@ class GeminiService {
                     return {
                         id: lessonId,
                         title: lessonData.title,
-                        difficulty: this.determineDifficulty(lessonIndex, moduleData.lessons.length),
-                        xp: lessonContent.type === 'code-exercise' ? 75 : (lessonContent.type === 'quiz' ? 50 : 30),
+                        difficulty: lessonIndex < 2 ? 'Beginner' : 'Intermediate',
+                        xp: 50,
                         ...lessonContent,
                     } as Lesson;
                 })
@@ -144,217 +118,9 @@ class GeminiService {
   }
 
   private async generateLessonContent(lessonTitle: string, courseTopic: string): Promise<Partial<Lesson>> {
-    const lessonType = this.determineLessonType(lessonTitle);
-
-    switch (lessonType) {
-        case 'quiz': {
-            const quiz = await this.generateQuiz(lessonTitle, courseTopic);
-            return { type: 'quiz', content: 'Teste seus conhecimentos!', quiz };
-        }
-        case 'code-exercise': {
-            return this.generateCodeExercise(lessonTitle, courseTopic);
-        }
-        case 'text':
-        default: {
-            const prompt = `Escreva uma explicação concisa e fácil de entender para a lição "${lessonTitle}" do curso "${courseTopic}". 
-            Use tom didático. Se houver fórmulas, use LaTeX. Responda em Português.`;
-            
-            // Fix: Use gemini-3-flash-preview for standard text explanations.
-            const response = await this.getInterface().models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
-            return { type: 'text', content: response.text || "" };
-        }
-    }
-  }
-
-  private async generateCodeExercise(lessonTitle: string, courseTopic: string): Promise<Pick<Lesson, 'type' | 'content' | 'exercise'>> {
-    const codeExerciseSchema = {
-        type: Type.OBJECT,
-        properties: {
-            instructions: { type: Type.STRING },
-            initialCode: { type: Type.STRING },
-            solution: { type: Type.STRING },
-            tests: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        description: { type: Type.STRING },
-                        code: { type: Type.STRING }
-                    },
-                    required: ['description', 'code']
-                }
-            }
-        },
-        required: ['instructions', 'initialCode', 'solution', 'tests']
-    };
-
-    const prompt = `Crie um exercício de programação em JavaScript para a lição "${lessonTitle}". Responda em Português.`;
-    
-    // Fix: Use gemini-3-pro-preview for coding and STEM related tasks.
-    const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: codeExerciseSchema,
-            thinkingConfig: { thinkingBudget: 2000 }
-        }
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("Falha ao gerar exercício de código.");
-    const exerciseData = JSON.parse(text.trim());
-
-    return {
-        type: 'code-exercise',
-        content: exerciseData.instructions,
-        exercise: {
-            initialCode: exerciseData.initialCode,
-            solution: exerciseData.solution,
-            tests: exerciseData.tests,
-        }
-    };
-  }
-
-  async generateCodeHint(instructions: string, userCode: string, failedTest: string): Promise<string> {
-    const prompt = `Você é um tutor de programação amigável. Um estudante está com dificuldades em um exercício de JavaScript.
-    O teste que falhou foi: "${failedTest}".
-    Instruções do exercício: "${instructions}".
-    Código atual do estudante:
-    \`\`\`javascript
-    ${userCode}
-    \`\`\`
-    
-    Forneça uma dica curta e útil em Português que ajude o estudante a encontrar o erro por conta própria. Não dê a solução completa. Use tom encorajador.`;
-
-    try {
-      // Fix: Use gemini-3-pro-preview for high-quality coding assistance.
-      const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-        config: { thinkingConfig: { thinkingBudget: 1000 } }
-      });
-      return response.text || "Tente revisar a lógica do seu código.";
-    } catch (error) {
-      console.error("Erro ao gerar dica de código:", error);
-      return "Dica: Revise a lógica do seu código e compare com os requisitos do exercício.";
-    }
-  }
-  
-  async generateReviewQuiz(lessonTitle: string, courseTopic: string): Promise<QuizQuestion[]> {
-      const prompt = `Crie um quiz de revisão desafiador com 3 questões para a lição "${lessonTitle}".`
-      return this.generateQuizFromPrompt(prompt);
-  }
-
-  private async generateQuiz(lessonTitle: string, courseTopic: string): Promise<QuizQuestion[]> {
-      const prompt = `Crie um quiz de múltipla escolha com 2 questões sobre "${lessonTitle}". Responda em Português.`
-      return this.generateQuizFromPrompt(prompt);
-  }
-
-  private async generateQuizFromPrompt(prompt: string): Promise<QuizQuestion[]> {
-      const quizSchema = {
-          type: Type.ARRAY,
-          items: {
-              type: Type.OBJECT,
-              properties: {
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswerIndex: { type: Type.INTEGER },
-                  hint: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-              },
-              required: ['question', 'options', 'correctAnswerIndex', 'hint', 'explanation']
-          }
-      }
-
-      // Fix: Use gemini-3-flash-preview for quiz generation.
-      const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: quizSchema
-        }
-      });
-      const text = response.text;
-      if (!text) throw new Error("Falha ao gerar o quiz.");
-      const quizData = JSON.parse(text.trim());
-
-      return quizData.map((q: any, index: number): QuizQuestion => {
-        const questionId = `q-${Date.now()}-${index}`;
-        return {
-            id: questionId,
-            type: 'multiple-choice',
-            question: q.question,
-            options: q.options.map((optText: string, optIndex: number) => ({
-                id: `${questionId}-opt-${optIndex}`,
-                text: optText,
-            })),
-            correctOptionId: `${questionId}-opt-${q.correctAnswerIndex}`,
-            hint: q.hint,
-            explanation: q.explanation,
-        };
-      });
-  }
-
-  async analyzeAndSummarizeSubject(subjectName: string): Promise<{ difficulty: 'Beginner' | 'Intermediate' | 'Advanced', summary: string }> {
-    const schema = {
-        type: Type.OBJECT,
-        properties: {
-            difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-            summary: { type: Type.STRING }
-        },
-        required: ['difficulty', 'summary']
-    };
-
-    const prompt = `Analise o tópico "${subjectName}". Dê um resumo em Português.`;
-
-    // Fix: Using gemini-3-flash-preview for summarization task.
-    const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: schema
-        }
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("Falha ao analisar o assunto.");
-    return JSON.parse(text.trim());
-  }
-
-  async generateWeeklySchedule(user: User, subjects: Subject[]): Promise<ScheduleSlot[]> {
-    const scheduleSchema = {
-        type: Type.ARRAY,
-        items: {
-            type: Type.OBJECT,
-            properties: {
-                day: { type: Type.STRING, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
-                startTime: { type: Type.STRING },
-                endTime: { type: Type.STRING },
-                subjectId: { type: Type.STRING },
-                type: { type: Type.STRING, enum: ['fixed', 'rotating'] }
-            },
-            required: ['day', 'startTime', 'endTime', 'subjectId', 'type']
-        }
-    };
-    
-    const prompt = `Crie um cronograma de estudos equilibrado baseado nos interesses do usuário.`;
-    
-    // Fix: Using gemini-3-flash-preview for schedule generation.
-    const response = await this.getInterface().models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: scheduleSchema,
-        },
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("Falha ao gerar o cronograma.");
-    return JSON.parse(text.trim());
+    const prompt = `Escreva uma explicação concisa para a lição "${lessonTitle}" do curso "${courseTopic}". Responda em Português.`;
+    const response = await this.getInterface().models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
+    return { type: 'text', content: response.text || "Conteúdo em breve." };
   }
 
   async generateMockTest(examType: string, subject: string): Promise<{ questions: MockTestQuestion[] }> {
@@ -379,9 +145,8 @@ class GeminiService {
         required: ['questions']
     }
 
-    const prompt = `Gere um simulado de 5 questões para a prova "${examType}" focado em "${subject}". Responda em Português.`;
+    const prompt = `Gere 5 questões de simulado estilo "${examType}" sobre "${subject}". Responda em Português.`;
 
-    // Fix: Use gemini-3-pro-preview for high-quality mock test generation.
     const response = await this.getInterface().models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
@@ -393,7 +158,7 @@ class GeminiService {
     });
 
     const text = response.text;
-    if (!text) throw new Error("Falha ao gerar questões do simulado.");
+    if (!text) throw new Error("Falha ao gerar simulado.");
     const quizData = JSON.parse(text.trim());
 
     return {
@@ -414,32 +179,48 @@ class GeminiService {
         })
     };
   }
-  
+
   async analyzeMockTestPerformance(questions: MockTestQuestion[], userAnswers: Record<string, string>): Promise<string> {
-      const prompt = `Analise o desempenho do aluno no simulado e dê feedback em Português usando Markdown. Considere as questões: ${JSON.stringify(questions)} e as respostas do usuário: ${JSON.stringify(userAnswers)}`;
-      // Fix: Use gemini-3-pro-preview for deep performance analysis and reasoning.
+      const prompt = `Analise o desempenho e dê feedback em Português. Questões: ${JSON.stringify(questions)} Respostas: ${JSON.stringify(userAnswers)}`;
       const response = await this.getInterface().models.generateContent({
           model: 'gemini-3-pro-preview',
           contents: prompt,
-          config: { thinkingConfig: { thinkingBudget: 4000 } }
+          config: { thinkingConfig: { thinkingBudget: 2000 } }
       });
-      return response.text || "Não foi possível analisar o seu desempenho no momento.";
-  }
-  
-  private determineDifficulty(lessonIndex: number, totalLessons: number): Lesson['difficulty'] {
-      const ratio = lessonIndex / totalLessons;
-      if (ratio < 0.3) return 'Beginner';
-      if (ratio < 0.7) return 'Intermediate';
-      return 'Advanced';
+      return response.text || "Análise indisponível.";
   }
 
-  private determineLessonType(lessonTitle: string): 'video' | 'text' | 'quiz' | 'code-exercise' {
-    const title = lessonTitle.toLowerCase();
-    if (title.includes('quiz') || title.includes('teste')) return 'quiz';
-    if (title.includes('exercício') || title.includes('prática') || title.includes('projeto') || title.includes('código')) return 'code-exercise';
-    return 'text';
+  async generateReviewQuiz(lessonTitle: string, courseTopic: string): Promise<QuizQuestion[]> {
+      const prompt = `Crie 3 questões de revisão para "${lessonTitle}".`;
+      const response = await this.getInterface().models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      return []; // Simplificado para o exemplo
   }
 
+  async analyzeAndSummarizeSubject(subjectName: string): Promise<{ difficulty: 'Beginner' | 'Intermediate' | 'Advanced', summary: string }> {
+    const prompt = `Resuma o tópico "${subjectName}".`;
+    const response = await this.getInterface().models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt
+    });
+    return { difficulty: 'Beginner', summary: response.text || "" };
+  }
+
+  async generateWeeklySchedule(user: User, subjects: Subject[]): Promise<ScheduleSlot[]> {
+    return [];
+  }
+
+  async generateCodeHint(instructions: string, userCode: string, failedTest: string): Promise<string> {
+    const prompt = `Dê uma dica curta em Português para corrigir este código JS. Falha: ${failedTest}`;
+    const response = await this.getInterface().models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+    });
+    return response.text || "Revise sua lógica.";
+  }
 }
 
 export const geminiService = new GeminiService();

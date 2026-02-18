@@ -84,6 +84,7 @@ export interface SubscriptionPlan {
   is_featured: boolean;
   is_premium: boolean;
   tier: 'free' | 'pro' | 'premium';
+  billing_cycle: 'monthly' | 'annual';
 }
 
 export interface User {

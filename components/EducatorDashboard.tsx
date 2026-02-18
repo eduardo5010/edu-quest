@@ -38,18 +38,21 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
 
   const handleSyncHotmartPlans = async () => {
       setIsSyncing(true);
-      setSyncStatus("Conectando com Hotmart API...");
+      setSyncStatus("⏳ Conectando com Hotmart API...");
       try {
           const result = await databaseService.syncPlansWithHotmart();
           if (result.success) {
-              setSyncStatus("✓ " + result.message);
-              // Recarregar a página para o app ver os novos planos
-              setTimeout(() => window.location.reload(), 2000);
+              setSyncStatus("✅ " + result.message);
+              // Feedback sonoro opcional ou visual forte
+              setTimeout(() => {
+                  setSyncStatus("🚀 Recarregando aplicação para aplicar novos preços...");
+                  setTimeout(() => window.location.reload(), 1500);
+              }, 1000);
           } else {
               setSyncStatus("❌ " + result.message);
           }
       } catch (e: any) {
-          setSyncStatus("❌ Erro: " + (e.message || "Falha na sincronização"));
+          setSyncStatus("❌ Erro fatal: " + (e.message || "Falha na rede"));
       } finally {
           setIsSyncing(false);
       }
@@ -155,16 +158,17 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
 
         {activeTab === 'hotmart' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                {/* NOVO: Bloco de Sincronização de Planos */}
-                <div className="bg-gradient-to-br from-slate-900 to-indigo-900 p-10 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-orange-500">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="bg-gradient-to-br from-slate-900 to-indigo-900 p-10 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-orange-500 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl font-black">SYNC</div>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
                         <div className="max-w-xl">
                             <h2 className="text-3xl font-black mb-4">Sincronizar Ofertas Hotmart</h2>
-                            <p className="text-indigo-200 font-medium mb-6">
-                                Clique para buscar automaticamente todos os preços (BRL/USD) e links de checkout configurados no seu produto da Hotmart.
+                            <p className="text-indigo-200 font-medium mb-6 leading-relaxed">
+                                Esta ação busca os preços (BRL/USD) e checkouts diretamente da sua conta Hotmart e atualiza a landing page automaticamente.
                             </p>
                             {syncStatus && (
-                                <div className={`p-4 rounded-xl font-bold text-sm mb-6 ${syncStatus.includes('❌') ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-200'}`}>
+                                <div className={`p-5 rounded-2xl font-bold text-sm mb-6 flex items-center gap-3 transition-all ${syncStatus.includes('❌') ? 'bg-red-500/20 text-red-200 border border-red-500/50' : 'bg-green-500/20 text-green-200 border border-green-500/50'}`}>
+                                    <span className="text-xl shrink-0">{syncStatus.includes('✅') ? '✨' : syncStatus.includes('⏳') ? '⚙️' : '⚠️'}</span>
                                     {syncStatus}
                                 </div>
                             )}
@@ -172,14 +176,14 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                         <button 
                             onClick={handleSyncHotmartPlans}
                             disabled={isSyncing}
-                            className="bg-orange-500 hover:bg-orange-600 px-10 py-5 rounded-2xl font-black shadow-2xl transform hover:-translate-y-1 transition-all disabled:opacity-50 shrink-0"
+                            className="bg-orange-500 hover:bg-orange-600 px-12 py-6 rounded-[2rem] font-black shadow-[0_15px_40px_rgba(249,115,22,0.4)] transform hover:-translate-y-1 transition-all disabled:opacity-50 shrink-0 text-white uppercase tracking-widest text-xs"
                         >
                             {isSyncing ? "Sincronizando..." : "🚀 Puxar Planos Agora"}
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-xl border-b-8 border-slate-200">
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-xl border-b-8 border-slate-200 dark:border-slate-700">
                     <div className="flex items-center space-x-3 mb-6">
                         <span className="text-4xl">🔥</span>
                         <h2 className="text-2xl font-black">Automação de Vendas (Webhook)</h2>
@@ -187,7 +191,7 @@ const EducatorDashboard: React.FC<EducatorDashboardProps> = ({ user, allUsers, o
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         <div className="space-y-6">
-                            <p className="text-slate-500 dark:text-slate-400 font-medium">Configuração de Webhook:</p>
+                            <p className="text-slate-500 dark:text-slate-400 font-medium">Configure o Webhook para liberar acesso instantâneo:</p>
                             <ol className="space-y-4">
                                 <li className="flex items-start space-x-3">
                                     <span className="bg-orange-500 text-white w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0">1</span>
